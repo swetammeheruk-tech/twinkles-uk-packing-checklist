@@ -4,10 +4,10 @@ import { ChangeEvent, CSSProperties, FormEvent, useCallback, useEffect, useMemo,
 import { createClient, SupabaseClient, User } from "@supabase/supabase-js";
 
 type Priority = "Essential" | "Important" | "Optional";
-type Bag = "Hand Luggage" | "Checked Bag 1" | "Checked Bag 2" | "Personal Bag" | "Buy in UK";
-type Status = "Not Packed" | "Packed" | "Need to Buy" | "Buy in UK";
-type Source = "Pack from India" | "Buy in UK" | "Undecided";
-type Tab = "overview" | "checklist" | "bags" | "buy" | "travel" | "cloud";
+type Bag = "Hand Luggage" | "Checked Bag 1" | "Checked Bag 2";
+type Status = "Not Packed" | "Packed";
+type Source = "Pack from India" | "Undecided";
+type Tab = "overview" | "checklist" | "bags" | "travel" | "cloud";
 
 type Item = {
   id: string;
@@ -50,10 +50,10 @@ const cloudSettingsKey = "twinkles-cloud-settings-v1";
 const cloudChecklistKey = "twinkles-cloud-checklist-id-v1";
 const sharedChecklistKey = "twinkle-main";
 
-const bags: Bag[] = ["Hand Luggage", "Checked Bag 1", "Checked Bag 2", "Personal Bag", "Buy in UK"];
+const bags: Bag[] = ["Hand Luggage", "Checked Bag 1", "Checked Bag 2"];
 const priorities: Priority[] = ["Essential", "Important", "Optional"];
-const statuses: Status[] = ["Not Packed", "Packed", "Need to Buy", "Buy in UK"];
-const sources: Source[] = ["Pack from India", "Buy in UK", "Undecided"];
+const statuses: Status[] = ["Not Packed", "Packed"];
+const sources: Source[] = ["Pack from India", "Undecided"];
 
 const makeId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -127,8 +127,8 @@ function freshState(): AppState {
         defaultItem("Mobile Charger", "Essential", "Hand Luggage"),
         defaultItem("Power Bank", "Essential", "Hand Luggage"),
         defaultItem("Earphones / Headphones", "Important", "Hand Luggage"),
-        defaultItem("Smartwatch", "Optional", "Personal Bag"),
-        defaultItem("Smartwatch Charger", "Optional", "Personal Bag"),
+        defaultItem("Smartwatch", "Optional", "Hand Luggage"),
+        defaultItem("Smartwatch Charger", "Optional", "Hand Luggage"),
         defaultItem("UK Plug Adapter", "Essential", "Hand Luggage"),
         defaultItem("Universal Travel Adapter", "Important", "Hand Luggage"),
         defaultItem("USB / USB-C Cables", "Important", "Hand Luggage"),
@@ -151,14 +151,14 @@ function freshState(): AppState {
         defaultItem("Pain Relief Balm", "Important", "Checked Bag 1"),
         defaultItem("Band-Aids", "Important", "Checked Bag 1"),
         defaultItem("Basic First Aid Items", "Important", "Checked Bag 1"),
-        defaultItem("Glasses", "Essential", "Personal Bag"),
+        defaultItem("Glasses", "Essential", "Hand Luggage"),
         defaultItem("Spare Glasses", "Important", "Checked Bag 1"),
-        defaultItem("Contact Lens Supplies", "Important", "Personal Bag"),
+        defaultItem("Contact Lens Supplies", "Important", "Hand Luggage"),
       ], "Keep important prescription medicines and supporting prescriptions/doctor's letters in hand luggage where appropriate. Check UK rules before carrying controlled or restricted medicines."),
       category("Food & Indian Essentials", "🍲", [
         "Favourite Indian Snacks", "Masala / Spices", "Tea", "Homemade Dry Food", "Ready-to-Eat Food", "Pickles if permitted", "Small Kitchen Essentials",
       ].map((name) => defaultItem(name, "Optional")), "Check current UK customs and border rules before packing food, dairy, meat, plants, seeds or other restricted items."),
-      category("Hand Luggage", "👜", [
+      category("Travel Essentials", "👜", [
         defaultItem("Wallet", "Essential", "Hand Luggage"),
         defaultItem("Debit/Credit Cards", "Essential", "Hand Luggage"),
         defaultItem("Some GBP Cash", "Important", "Hand Luggage"),
@@ -172,12 +172,9 @@ function freshState(): AppState {
       category("UK Setup Items", "🏠", [
         "UK SIM information", "UK Address", "Emergency Contact Details", "Bank Cards", "Driving Licence",
         "International Driving Permit if applicable", "Copies of Certificates", "Initial Grocery List", "Important Phone Numbers",
-      ].map((name) => defaultItem(name, name.includes("Address") || name.includes("Emergency") ? "Essential" : "Important", name.includes("Initial") ? "Buy in UK" : "Hand Luggage", name.includes("Initial") ? "Buy in UK" : "Not Packed", name.includes("Initial") ? "Buy in UK" : "Pack from India"))),
+      ].map((name) => defaultItem(name, name.includes("Address") || name.includes("Emergency") ? "Essential" : "Important", "Hand Luggage"))),
       category("Gifts", "🎁", ["Gifts for Family", "Gifts for Friends", "Indian Sweets if permitted", "Souvenirs"].map((name) => defaultItem(name, "Optional"))),
       category("Miscellaneous", "🧳", ["Umbrella", "Sunglasses", "Small Backpack", "Handbag", "Travel Pillow", "Luggage Locks", "Luggage Tags", "Sewing Kit", "Reusable Shopping Bag", "Water Bottle"].map((name) => defaultItem(name, "Important"))),
-      category("Buy After Arriving in UK", "🛍️", [
-        "Duvet", "Pillows", "Large Shampoo Bottles", "Cleaning Supplies", "Heavy Kitchen Equipment", "Additional Winter Coat",
-      ].map((name) => defaultItem(name, "Optional", "Buy in UK", "Buy in UK", "Buy in UK"))),
     ],
     travelLists: [
       {
@@ -214,9 +211,44 @@ function freshState(): AppState {
       "Checked Bag 1": { current: 20.4, allowance: 23 },
       "Checked Bag 2": { current: 15, allowance: 23 },
       "Hand Luggage": { current: 6.8, allowance: 7 },
-      "Personal Bag": { current: 2.2, allowance: 5 },
     },
     dismissedSuggestions: [],
+  };
+}
+
+function normalizeAppState(input: AppState): AppState {
+  const cleanBag = (bag: string): Bag => {
+    if (bag === "Checked Bag 1" || bag === "Checked Bag 2") return bag;
+    return "Hand Luggage";
+  };
+
+  const categories = (input.categories ?? [])
+    .filter((cat) => cat.name !== "Buy After Arriving in UK")
+    .map((cat) => ({
+      ...cat,
+      name: cat.name === "Hand Luggage" ? "Travel Essentials" : cat.name,
+      items: (cat.items ?? [])
+        .filter((item) => item.bag !== "Buy in UK" && item.status !== "Buy in UK" && item.source !== "Buy in UK")
+        .map((item) => ({
+          ...item,
+          bag: cleanBag(String(item.bag)),
+          status: item.status === "Packed" ? "Packed" : "Not Packed",
+          source: item.source === "Undecided" ? "Undecided" : "Pack from India",
+        })),
+    }));
+
+  const weights: Record<string, WeightInfo> = {
+    "Checked Bag 1": input.weights?.["Checked Bag 1"] ?? { current: 20.4, allowance: 23 },
+    "Checked Bag 2": input.weights?.["Checked Bag 2"] ?? { current: 15, allowance: 23 },
+    "Hand Luggage": input.weights?.["Hand Luggage"] ?? { current: 6.8, allowance: 7 },
+  };
+
+  return {
+    ...input,
+    categories,
+    weights,
+    travelLists: input.travelLists ?? [],
+    dismissedSuggestions: input.dismissedSuggestions ?? [],
   };
 }
 
@@ -228,7 +260,7 @@ function usePackingState() {
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
-        setState(JSON.parse(saved) as AppState);
+        setState(normalizeAppState(JSON.parse(saved) as AppState));
       } catch {
         setState(freshState());
       }
@@ -332,7 +364,6 @@ export default function Home() {
   const essentialRemaining = allItems.filter((item) => item.priority === "Essential" && item.status !== "Packed").length;
   const progress = allItems.length ? Math.round((packedCount / allItems.length) * 100) : 0;
   const essentialItems = allItems.filter((item) => item.priority === "Essential" && item.status !== "Packed");
-  const buyItems = allItems.filter((item) => item.source === "Buy in UK" || item.status === "Buy in UK" || item.bag === "Buy in UK");
   const handLuggage = allItems.filter((item) => item.bag === "Hand Luggage");
   const handCore = ["Passport", "Visa", "Boarding Pass", "Phone", "Wallet", "Medicines", "Charger", "Power Bank", "UK Address", "Emergency"];
   const handReady = handCore.filter((term) => handLuggage.some((item) => item.name.toLowerCase().includes(term.toLowerCase()) && item.status === "Packed")).length;
@@ -361,9 +392,7 @@ export default function Home() {
           filter === "All" ||
           (filter === "Remaining" && item.status !== "Packed") ||
           (filter === "Packed" && item.status === "Packed") ||
-          (filter === "Essential" && item.priority === "Essential") ||
-          (filter === "Need to Buy" && item.status === "Need to Buy") ||
-          (filter === "Buy in UK" && (item.status === "Buy in UK" || item.source === "Buy in UK"));
+          (filter === "Essential" && item.priority === "Essential");
         const matchesCategory = categoryFilter === "All Categories" || cat.name === categoryFilter;
         const matchesBag = bagFilter === "All Bags" || item.bag === bagFilter;
         return matchesSearch && matchesFilter && matchesCategory && matchesBag;
@@ -419,7 +448,7 @@ export default function Home() {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result)) as AppState;
-        if (Array.isArray(parsed.categories)) setState(parsed);
+        if (Array.isArray(parsed.categories)) setState(normalizeAppState(parsed));
       } catch {
         alert("That backup file could not be imported.");
       }
@@ -529,7 +558,7 @@ export default function Home() {
       return;
     }
     cloudHydrating.current = true;
-    setState(row.state as AppState);
+    setState(normalizeAppState(row.state as AppState));
     setCloudChecklistId(row.id);
     latestCloudUpdatedAt.current = row.updated_at;
     localStorage.setItem(cloudChecklistKey, row.id);
@@ -594,7 +623,7 @@ export default function Home() {
           }
 
           cloudHydrating.current = true;
-          setState(next.state);
+          setState(normalizeAppState(next.state));
           setCloudStatus("Live update received.");
           window.setTimeout(() => {
             cloudHydrating.current = false;
@@ -630,7 +659,6 @@ export default function Home() {
           ["overview", "", "Overview"],
           ["checklist", "", "Checklist"],
           ["bags", "", "Bags"],
-          ["buy", "", "Buy"],
           ["travel", "", "Travel"],
         ].map(([id, icon, label]) => (
           <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id as Tab)}>{icon}{label}</button>
@@ -668,7 +696,7 @@ export default function Home() {
           <div className="toolbar panel">
             <input aria-label="Search packing items" placeholder="🔍 Search packing items..." value={query} onChange={(e) => setQuery(e.target.value)} />
             <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter by status">
-              {["All", "Remaining", "Packed", "Essential", "Need to Buy", "Buy in UK"].map((value) => <option key={value}>{value}</option>)}
+              {["All", "Remaining", "Packed", "Essential"].map((value) => <option key={value}>{value}</option>)}
             </select>
             <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} aria-label="Filter by category">
               <option>All Categories</option>
@@ -751,7 +779,7 @@ export default function Home() {
                       onEdit={() => setEditing({ item, categoryId: cat.id })}
                       onDelete={() => updateCategory(cat.id, (c) => ({ ...c, items: c.items.filter((x) => x.id !== item.id) }))}
                       onMoveCategory={(target) => moveItem(cat.id, item.id, target)}
-                      onMoveBag={(bag) => updateItem(cat.id, item.id, { bag, status: bag === "Buy in UK" ? "Buy in UK" : item.status, source: bag === "Buy in UK" ? "Buy in UK" : item.source })}
+                      onMoveBag={(bag) => updateItem(cat.id, item.id, { bag })}
                       onReorder={(direction) => updateCategory(cat.id, (c) => {
                         const next = [...c.items];
                         const target = itemIndex + direction;
@@ -770,7 +798,7 @@ export default function Home() {
       {tab === "bags" && (
         <section className="view-grid">
           <div className="bag-grid">
-            {bags.filter((bag) => bag !== "Buy in UK").map((bag) => {
+            {bags.map((bag) => {
               const count = allItems.filter((item) => item.bag === bag).length;
               return <button key={bag} className={`bag-card ${selectedBag === bag ? "active" : ""}`} onClick={() => setSelectedBag(bag)}><strong>{bagIcon(bag)} {bag}</strong><span>{count} Items</span></button>;
             })}
@@ -787,19 +815,6 @@ export default function Home() {
               ))}
             </div>
           </div>
-        </section>
-      )}
-
-      {tab === "buy" && (
-        <section className="view-grid">
-          <div className="panel">
-            <h2>🛍️ Buy After Arriving in UK</h2>
-            <p className="muted">Useful for heavier, bulky, or easy-to-find items.</p>
-            <div className="item-list">
-              {buyItems.map((item) => <MiniItem key={item.id} item={item} extra={item.categoryName} onBag={(bag) => updateItem(item.categoryId, item.id, { bag, status: bag === "Buy in UK" ? "Buy in UK" : item.status })} />)}
-            </div>
-          </div>
-          <SuggestionPanel suggestions={suggestions} dismiss={(idea) => setState((s) => ({ ...s, dismissedSuggestions: [...s.dismissedSuggestions, idea] }))} />
         </section>
       )}
 
@@ -861,7 +876,6 @@ export default function Home() {
           ["overview", "O", "Overview"],
           ["checklist", "C", "Checklist"],
           ["bags", "B", "Bags"],
-          ["buy", "U", "Buy"],
           ["travel", "T", "Travel"],
         ].map(([id, icon, label]) => (
           <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id as Tab)}><span>{icon}</span>{label}</button>
@@ -1019,7 +1033,6 @@ function PackingAssistant({
   const [answer, setAnswer] = useState("Ask me what is left, what is urgent, what goes in hand luggage, or what Twinkle should pack next.");
   const remainingItems = items.filter((item) => item.status !== "Packed");
   const essentialItems = remainingItems.filter((item) => item.priority === "Essential");
-  const buyItems = items.filter((item) => item.status === "Need to Buy" || item.status === "Buy in UK" || item.source === "Buy in UK");
   const topCategory = categories
     .map((cat) => ({ name: cat.name, icon: cat.icon, left: cat.items.filter((item) => item.status !== "Packed").length }))
     .sort((a, b) => b.left - a.left)[0];
@@ -1065,11 +1078,6 @@ function PackingAssistant({
       return;
     }
 
-    if (lower.includes("buy") || lower.includes("shop")) {
-      setAnswer(buyItems.length ? `Buy list: ${formatItems(buyItems)}. Keep bulky or easy-to-find items for the UK if luggage space is tight.` : "There is no active buy list right now. If something is bulky, move it to Buy in UK from the checklist.");
-      return;
-    }
-
     if (lower.includes("progress") || lower.includes("done") || lower.includes("left") || lower.includes("remaining")) {
       setAnswer(`Twinkle is ${progress}% packed: ${packed} done and ${remaining} left. The biggest open area is ${topCategory?.icon ?? ""} ${topCategory?.name ?? "the checklist"} with ${topCategory?.left ?? 0} items left.`);
       return;
@@ -1081,7 +1089,7 @@ function PackingAssistant({
       return;
     }
 
-    setAnswer(`I checked the live checklist, but I could not find a specific item from that question. Try asking "where is passport?", "what is left in hand luggage?", "what should I buy?", or "what is urgent?". Best focus now: ${essential ? `${essential} essential items` : `${remaining} remaining items`} and ${handTotal - handReady} hand-luggage core items left.`);
+    setAnswer(`I checked the live checklist, but I could not find a specific item from that question. Try asking "where is passport?", "what is left in hand luggage?", "what should I pack next?", or "what is urgent?". Best focus now: ${essential ? `${essential} essential items` : `${remaining} remaining items`} and ${handTotal - handReady} hand-luggage core items left.`);
   };
 
   return (
@@ -1098,7 +1106,7 @@ function PackingAssistant({
       </div>
       <div className="ai-chat">
         <form className="ai-ask" onSubmit={(event) => { event.preventDefault(); askAssistant(question); }}>
-          <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about documents, bags, buying, or progress..." />
+          <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about documents, bags, or progress..." />
           <button className="primary">Ask</button>
         </form>
         <div className="ai-answer">
@@ -1169,7 +1177,7 @@ function EditSheet({ item, categories, currentCategoryId, onClose, onSave }: {
         <label>Priority<select value={draft.priority} onChange={(e) => setDraft({ ...draft, priority: e.target.value as Priority })}>{priorities.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Bag Location<select value={draft.bag} onChange={(e) => setDraft({ ...draft, bag: e.target.value as Bag })}>{bags.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Status<select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as Status })}>{statuses.map((value) => <option key={value}>{value}</option>)}</select></label>
-        <label>Where should I get this?<select value={draft.source} onChange={(e) => setDraft({ ...draft, source: e.target.value as Source })}>{sources.map((value) => <option key={value}>{value}</option>)}</select></label>
+        <label>Packing plan<select value={draft.source} onChange={(e) => setDraft({ ...draft, source: e.target.value as Source })}>{sources.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Category<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>{categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
         <label>Notes<textarea value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} placeholder="Keep this easily accessible because it may be needed after landing." /></label>
         <button className="primary">Save Item</button>
@@ -1211,7 +1219,5 @@ function PriorityDot({ priority }: { priority: Priority }) {
 
 function bagIcon(bag: Bag) {
   if (bag === "Hand Luggage") return "🎒";
-  if (bag === "Personal Bag") return "👝";
-  if (bag === "Buy in UK") return "📦";
   return "🧳";
 }

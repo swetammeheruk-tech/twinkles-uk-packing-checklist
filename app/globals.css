@@ -641,7 +641,7 @@ button.save-pill {
   grid-template-columns: auto 1fr auto auto auto;
   gap: 8px;
   align-items: center;
-  padding: 14px;
+  padding: 12px;
   border-bottom: 1px solid var(--line);
   background:
     linear-gradient(90deg, rgba(31, 90, 166, 0.1), rgba(23, 131, 69, 0.05)),
@@ -653,7 +653,8 @@ button.save-pill {
 }
 
 .collapse {
-  width: 42px;
+  width: 38px;
+  min-height: 38px;
   padding: 0;
 }
 
@@ -669,7 +670,7 @@ button.save-pill {
 .category-actions,
 .quick-add,
 .inline-form {
-  margin: 14px;
+  margin: 10px 12px;
 }
 
 .quick-add,
@@ -680,8 +681,8 @@ button.save-pill {
 
 .item-list {
   display: grid;
-  gap: 10px;
-  padding: 14px;
+  gap: 8px;
+  padding: 12px;
 }
 
 .item-list.compact {
@@ -775,14 +776,15 @@ button.save-pill {
 
 .bag-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .bag-card {
   display: grid;
-  gap: 8px;
-  min-height: 104px;
+  gap: 5px;
+  min-height: 72px;
+  align-content: center;
   border: 1px solid var(--line);
   background:
     linear-gradient(135deg, #fff, #f8fbff);
@@ -806,7 +808,7 @@ button.save-pill {
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: #fff;
 }
 
@@ -821,7 +823,7 @@ button.save-pill {
 
 .weight-row {
   border-top: 1px solid var(--line);
-  padding: 14px 0;
+  padding: 10px 0;
 }
 
 .weight-inputs {
@@ -1255,7 +1257,20 @@ button.save-pill {
 
   .category-head {
     grid-template-columns: auto 1fr auto;
-    padding: 12px;
+    padding: 5px 7px;
+  }
+
+  .category {
+    box-shadow: 0 4px 12px rgba(18, 33, 61, 0.05);
+  }
+
+  .category-head h2 {
+    font-size: 0.9rem;
+  }
+
+  .collapse {
+    width: 28px;
+    min-height: 28px;
   }
 
   .category-head button:nth-last-child(-n + 2) {
@@ -1265,11 +1280,14 @@ button.save-pill {
   .category-actions {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
+    margin: 4px 7px 7px;
+    gap: 5px;
   }
 
   .category-actions button {
-    padding: 0 8px;
-    font-size: 0.86rem;
+    padding: 0 5px;
+    min-height: 28px;
+    font-size: 0.68rem;
   }
 
   .item-row {
@@ -1334,15 +1352,25 @@ button.save-pill {
   }
 
   .bag-card {
-    min-height: 82px;
-    padding: 16px;
+    min-height: 58px;
+    padding: 10px;
+  }
+
+  .bag-card strong {
+    font-size: 0.9rem;
+    line-height: 1.15;
+  }
+
+  .bag-card span {
+    font-size: 0.78rem;
   }
 
   .mini {
     display: grid;
     grid-template-columns: 1fr;
     align-items: stretch;
-    gap: 10px;
+    gap: 7px;
+    padding: 8px;
   }
 
   .mini select,
@@ -1364,7 +1392,7 @@ button.save-pill {
     bottom: max(10px, env(safe-area-inset-bottom));
     z-index: 10;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     border: 1px solid rgba(220, 228, 238, 0.9);
     border-radius: 8px;
