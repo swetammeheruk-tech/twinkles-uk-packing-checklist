@@ -48,6 +48,7 @@ type AppState = {
 const storageKey = "twinkles-uk-packing-checklist-v1";
 const cloudSettingsKey = "twinkles-cloud-settings-v1";
 const cloudChecklistKey = "twinkles-cloud-checklist-id-v1";
+const sharedChecklistKey = "twinkle-main";
 
 const bags: Bag[] = ["Hand Luggage", "Checked Bag 1", "Checked Bag 2", "Personal Bag", "Buy in UK"];
 const priorities: Priority[] = ["Essential", "Important", "Optional"];
@@ -264,6 +265,7 @@ export default function Home() {
   const [cloudBusy, setCloudBusy] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const cloudHydrating = useRef(false);
+  const latestCloudUpdatedAt = useRef("");
 
   const supabase = useMemo<SupabaseClient | null>(() => {
     const normalizedUrl = normalizeSupabaseUrl(cloudUrl);
@@ -467,23 +469,17 @@ export default function Home() {
 
     const payload = {
       owner_id: cloudUser.id,
+      share_key: sharedChecklistKey,
       title: "Twinkle UK Packing Checklist",
       state,
       updated_at: new Date().toISOString(),
     };
 
-    const result = cloudChecklistId
-      ? await supabase
-          .from("packing_checklists")
-          .update(payload)
-          .eq("id", cloudChecklistId)
-          .select("id")
-          .single()
-      : await supabase
-          .from("packing_checklists")
-          .insert(payload)
-          .select("id")
-          .single();
+    const result = await supabase
+      .from("packing_checklists")
+      .upsert(payload, { onConflict: "share_key" })
+      .select("id,updated_at")
+      .single();
 
     if (!silent) setCloudBusy(false);
     if (result.error) {
@@ -492,12 +488,14 @@ export default function Home() {
     }
 
     const id = result.data?.id as string | undefined;
+    const updatedAt = result.data?.updated_at as string | undefined;
     if (id) {
       setCloudChecklistId(id);
       localStorage.setItem(cloudChecklistKey, id);
     }
+    if (updatedAt) latestCloudUpdatedAt.current = updatedAt;
     setCloudStatus(silent ? "Cloud autosaved." : "Checklist saved to cloud.");
-  }, [cloudChecklistId, cloudUser, state, supabase]);
+  }, [cloudUser, state, supabase]);
 
   const loadFromCloud = async () => {
     if (!supabase || !cloudUser) {
@@ -510,9 +508,10 @@ export default function Home() {
     const query = supabase
       .from("packing_checklists")
       .select("id,state,updated_at")
+      .eq("share_key", sharedChecklistKey)
       .order("updated_at", { ascending: false })
       .limit(1);
-    const result = cloudChecklistId ? await query.eq("id", cloudChecklistId) : await query;
+    const result = await query;
 
     setCloudBusy(false);
     if (result.error) {
@@ -521,12 +520,14 @@ export default function Home() {
     }
     const row = result.data?.[0];
     if (!row) {
-      setCloudStatus("No cloud checklist found yet. Save this one first.");
+      setCloudStatus("Creating shared cloud checklist...");
+      void saveToCloud(true);
       return;
     }
     cloudHydrating.current = true;
     setState(row.state as AppState);
     setCloudChecklistId(row.id);
+    latestCloudUpdatedAt.current = row.updated_at;
     localStorage.setItem(cloudChecklistKey, row.id);
     setCloudStatus("Cloud checklist loaded.");
     window.setTimeout(() => {
@@ -535,13 +536,13 @@ export default function Home() {
   };
 
   const deleteCloudChecklist = async () => {
-    if (!supabase || !cloudUser || !cloudChecklistId) {
+    if (!supabase || !cloudUser) {
       setCloudStatus("No cloud checklist is selected.");
       return;
     }
     if (!confirm("Delete the cloud copy of this checklist? Your local browser copy will remain.")) return;
     setCloudBusy(true);
-    const { error } = await supabase.from("packing_checklists").delete().eq("id", cloudChecklistId);
+    const { error } = await supabase.from("packing_checklists").delete().eq("share_key", sharedChecklistKey);
     setCloudBusy(false);
     if (error) {
       setCloudStatus(friendlyCloudError(error.message));
@@ -562,11 +563,48 @@ export default function Home() {
 
   useEffect(() => {
     if (!supabase || !cloudUser || cloudChecklistId || cloudHydrating.current) return;
-    const timeout = window.setTimeout(() => {
-      void saveToCloud(true);
-    }, 1200);
-    return () => window.clearTimeout(timeout);
-  }, [cloudChecklistId, cloudUser, saveToCloud, supabase]);
+    void loadFromCloud();
+  }, [cloudChecklistId, cloudUser, supabase]);
+
+  useEffect(() => {
+    if (!supabase || !cloudUser) return;
+
+    const channel = supabase
+      .channel("twinkle-shared-checklist")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "packing_checklists",
+          filter: `share_key=eq.${sharedChecklistKey}`,
+        },
+        (payload) => {
+          const next = payload.new as { id?: string; state?: AppState; updated_at?: string } | null;
+          if (!next?.state || !next.updated_at || next.updated_at === latestCloudUpdatedAt.current) return;
+
+          latestCloudUpdatedAt.current = next.updated_at;
+          if (next.id) {
+            setCloudChecklistId(next.id);
+            localStorage.setItem(cloudChecklistKey, next.id);
+          }
+
+          cloudHydrating.current = true;
+          setState(next.state);
+          setCloudStatus("Live update received.");
+          window.setTimeout(() => {
+            cloudHydrating.current = false;
+          }, 1000);
+        },
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setCloudStatus("Live cloud sync active.");
+      });
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [cloudUser, supabase]);
 
   return (
     <main className="app-shell">
