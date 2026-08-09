@@ -54,6 +54,7 @@ const bags: Bag[] = ["Hand Luggage", "Checked Bag 1", "Checked Bag 2"];
 const priorities: Priority[] = ["Essential", "Important", "Optional"];
 const statuses: Status[] = ["Not Packed", "Packed"];
 const sources: Source[] = ["Pack from India", "Undecided"];
+const confirmChange = (message: string) => window.confirm(message);
 
 const makeId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -134,7 +135,7 @@ function freshState(): AppState {
         defaultItem("USB / USB-C Cables", "Important", "Hand Luggage"),
         defaultItem("External Hard Drive", "Optional", "Checked Bag 1"),
         defaultItem("Hair Dryer if required", "Optional", "Checked Bag 2"),
-      ], "UK uses Type G three-pin plugs. Check whether appliances support 220-240V before using them in the UK."),
+      ]),
       category("Personal Care", "🧴", [
         "Toothbrush", "Toothpaste", "Face Wash", "Moisturiser", "Shampoo", "Conditioner", "Body Wash", "Soap",
         "Deodorant", "Perfume", "Comb / Hairbrush", "Hair Oil", "Hair Accessories", "Sanitary Products", "Makeup",
@@ -154,10 +155,10 @@ function freshState(): AppState {
         defaultItem("Glasses", "Essential", "Hand Luggage"),
         defaultItem("Spare Glasses", "Important", "Checked Bag 1"),
         defaultItem("Contact Lens Supplies", "Important", "Hand Luggage"),
-      ], "Keep important prescription medicines and supporting prescriptions/doctor's letters in hand luggage where appropriate. Check UK rules before carrying controlled or restricted medicines."),
+      ]),
       category("Food & Indian Essentials", "🍲", [
         "Favourite Indian Snacks", "Masala / Spices", "Tea", "Homemade Dry Food", "Ready-to-Eat Food", "Pickles if permitted", "Small Kitchen Essentials",
-      ].map((name) => defaultItem(name, "Optional")), "Check current UK customs and border rules before packing food, dairy, meat, plants, seeds or other restricted items."),
+      ].map((name) => defaultItem(name, "Optional"))),
       category("Travel Essentials", "👜", [
         defaultItem("Wallet", "Essential", "Hand Luggage"),
         defaultItem("Debit/Credit Cards", "Essential", "Hand Luggage"),
@@ -227,6 +228,7 @@ function normalizeAppState(input: AppState): AppState {
     .map((cat) => ({
       ...cat,
       name: cat.name === "Hand Luggage" ? "Travel Essentials" : cat.name,
+      note: undefined,
       items: (cat.items ?? [])
         .filter((item) => item.bag !== "Buy in UK" && item.status !== "Buy in UK" && item.source !== "Buy in UK")
         .map((item) => ({
@@ -426,6 +428,7 @@ export default function Home() {
   const addQuickItem = (event: FormEvent, categoryId: string) => {
     event.preventDefault();
     if (!quickName.trim()) return;
+    if (!confirmChange(`Add "${quickName.trim()}" to this category?`)) return;
     updateCategory(categoryId, (cat) => ({ ...cat, items: [...cat.items, defaultItem(quickName.trim())] }));
     setQuickName("");
     setNewItemCategory(null);
@@ -712,6 +715,7 @@ export default function Home() {
             <form className="new-category" onSubmit={(e) => {
               e.preventDefault();
               if (!newCategoryName.trim()) return;
+              if (!confirmChange(`Add new category "${newCategoryName.trim()}"?`)) return;
               setState((s) => ({ ...s, categories: [...s.categories, category(newCategoryName.trim(), "📦", [])] }));
               setNewCategoryName("");
             }}>
@@ -729,7 +733,7 @@ export default function Home() {
           {filteredCategories.map((cat, catIndex) => (
             <article className="category panel" key={cat.id}>
               <div className="category-head">
-                <button className="collapse" onClick={() => updateCategory(cat.id, (c) => ({ ...c, collapsed: !c.collapsed }))}>{cat.collapsed ? "＋" : "−"}</button>
+                <button className="collapse" onClick={() => confirmChange(`${cat.collapsed ? "Expand" : "Collapse"} "${cat.name}"?`) && updateCategory(cat.id, (c) => ({ ...c, collapsed: !c.collapsed }))}>{cat.collapsed ? "＋" : "−"}</button>
                 <h2>{cat.icon} {cat.name}</h2>
                 <span>{cat.items.filter((item) => item.status === "Packed").length}/{cat.items.length}</span>
                 <button title="Move category up" disabled={catIndex === 0} onClick={() => setState((s) => {
@@ -745,10 +749,11 @@ export default function Home() {
                   return { ...s, categories: next };
                 })}>↓</button>
               </div>
-              {cat.note && <p className="note">{cat.note}</p>}
               {renamingCategory === cat.id ? (
                 <form className="inline-form" onSubmit={(e) => {
                   e.preventDefault();
+                  const nextName = renameValue.trim() || cat.name;
+                  if (!confirmChange(`Rename "${cat.name}" to "${nextName}"?`)) return;
                   updateCategory(cat.id, (c) => ({ ...c, name: renameValue.trim() || c.name }));
                   setRenamingCategory(null);
                 }}>
@@ -759,7 +764,7 @@ export default function Home() {
                 <div className="category-actions">
                   <button onClick={() => setNewItemCategory(cat.id)}>Add item</button>
                   <button onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>Rename</button>
-                  <button className="danger" onClick={() => confirm(`Delete ${cat.name}?`) && setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) }))}>Delete</button>
+                  <button className="danger" onClick={() => confirmChange(`Delete "${cat.name}" and all items inside it?`) && setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) }))}>Delete</button>
                 </div>
               )}
               {newItemCategory === cat.id && (
@@ -775,11 +780,11 @@ export default function Home() {
                       key={item.id}
                       item={item}
                       categories={state.categories}
-                      onToggle={() => updateItem(cat.id, item.id, { status: item.status === "Packed" ? "Not Packed" : "Packed" })}
+                      onToggle={() => confirmChange(`Mark "${item.name}" as ${item.status === "Packed" ? "not packed" : "packed"}?`) && updateItem(cat.id, item.id, { status: item.status === "Packed" ? "Not Packed" : "Packed" })}
                       onEdit={() => setEditing({ item, categoryId: cat.id })}
-                      onDelete={() => updateCategory(cat.id, (c) => ({ ...c, items: c.items.filter((x) => x.id !== item.id) }))}
-                      onMoveCategory={(target) => moveItem(cat.id, item.id, target)}
-                      onMoveBag={(bag) => updateItem(cat.id, item.id, { bag })}
+                      onDelete={() => confirmChange(`Delete "${item.name}"?`) && updateCategory(cat.id, (c) => ({ ...c, items: c.items.filter((x) => x.id !== item.id) }))}
+                      onMoveCategory={(target) => confirmChange(`Move "${item.name}" to another category?`) && moveItem(cat.id, item.id, target)}
+                      onMoveBag={(bag) => confirmChange(`Move "${item.name}" to ${bag}?`) && updateItem(cat.id, item.id, { bag })}
                       onReorder={(direction) => updateCategory(cat.id, (c) => {
                         const next = [...c.items];
                         const target = itemIndex + direction;
@@ -810,7 +815,7 @@ export default function Home() {
               {allItems.filter((item) => item.bag === selectedBag).map((item) => (
                 <MiniItem key={item.id} item={item} extra={item.categoryName} onBag={(bag) => {
                   const found = allItems.find((x) => x.id === item.id);
-                  if (found) updateItem(found.categoryId, found.id, { bag });
+                  if (found && confirmChange(`Move "${found.name}" to ${bag}?`)) updateItem(found.categoryId, found.id, { bag });
                 }} />
               ))}
             </div>
@@ -864,6 +869,7 @@ export default function Home() {
           currentCategoryId={editing.categoryId}
           onClose={() => setEditing(null)}
           onSave={(item, targetCategoryId) => {
+            if (!confirmChange(`Save changes to "${item.name}"?`)) return;
             if (targetCategoryId !== editing.categoryId) moveItem(editing.categoryId, item.id, targetCategoryId, item);
             else updateItem(editing.categoryId, item.id, item);
             setEditing(null);
@@ -1197,8 +1203,14 @@ function WeightTracker({ weights, setWeights }: { weights: Record<string, Weight
           <div className="weight-row" key={bag}>
             <h3>{bagIcon(bag as Bag)} {bag}</h3>
             <div className="weight-inputs">
-              <label>Current Weight<input type="number" step="0.1" value={info.current} onChange={(e) => setWeights({ ...weights, [bag]: { ...info, current: Number(e.target.value) } })} /></label>
-              <label>Airline Allowance<input type="number" step="0.1" value={info.allowance} onChange={(e) => setWeights({ ...weights, [bag]: { ...info, allowance: Number(e.target.value) || 1 } })} /></label>
+              <label>Current Weight<input type="number" step="0.1" value={info.current} onChange={(e) => {
+                const next = Number(e.target.value);
+                if (confirmChange(`Update ${bag} current weight to ${next} kg?`)) setWeights({ ...weights, [bag]: { ...info, current: next } });
+              }} /></label>
+              <label>Airline Allowance<input type="number" step="0.1" value={info.allowance} onChange={(e) => {
+                const next = Number(e.target.value) || 1;
+                if (confirmChange(`Update ${bag} allowance to ${next} kg?`)) setWeights({ ...weights, [bag]: { ...info, allowance: next } });
+              }} /></label>
             </div>
             <div className={`bar ${pct > 100 ? "over" : pct > 85 ? "warn" : ""}`}><span style={{ width: `${Math.min(100, pct)}%` }} /></div>
             <p>{over > 0 ? `⚠ Bag is ${over.toFixed(1)} kg over the baggage allowance.` : `${(info.allowance - info.current).toFixed(1)} kg remaining`}</p>
