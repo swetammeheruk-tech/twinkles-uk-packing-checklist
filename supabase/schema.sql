@@ -10,6 +10,20 @@ create table if not exists public.packing_checklists (
 alter table public.packing_checklists
   add column if not exists share_key text not null default 'twinkle-main';
 
+with ranked_checklists as (
+  select
+    id,
+    row_number() over (
+      partition by share_key
+      order by updated_at desc, id desc
+    ) as row_number
+  from public.packing_checklists
+)
+delete from public.packing_checklists checklist
+using ranked_checklists ranked
+where checklist.id = ranked.id
+  and ranked.row_number > 1;
+
 create unique index if not exists packing_checklists_share_key_idx
   on public.packing_checklists (share_key);
 
