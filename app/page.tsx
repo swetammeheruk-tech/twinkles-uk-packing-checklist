@@ -616,7 +616,7 @@ export default function Home() {
         <div>
           <p className="journey">India to United Kingdom</p>
           <h1>Twinkle’s UK Packing Checklist</h1>
-          <p>A practical packing dashboard for documents, luggage, travel checks, and UK setup items.</p>
+          <p>Plan calmly, pack clearly, and keep every travel essential in one place.</p>
           <button className="save-pill" onClick={() => setTab("cloud")}>{cloudUser ? "Cloud backup on" : "Autosaved locally"}</button>
         </div>
         <div className="progress-orbit" style={{ "--pct": `${progress}%` } as CSSProperties} aria-label={`Packing Progress: ${progress}%`}>
@@ -642,7 +642,7 @@ export default function Home() {
           <div className="hello panel">
             <span className="section-label">Trip preparation</span>
             <h2>Hello Twinkle</h2>
-            <p>Your checklist is saved automatically in this browser. Keep packing progress, categories, and notes updated here.</p>
+            <p>Start with essentials, keep luggage organised, and check off each item as it is ready.</p>
             <button className="primary" onClick={() => setTab("checklist")}>Continue Packing</button>
           </div>
           <PackingAssistant
@@ -1089,7 +1089,7 @@ function PackingAssistant({
       <div className="ai-copy">
         <span className="section-label ai-label">AI packing summary</span>
         <h2>Ask Twinkle’s packing assistant</h2>
-        <p>Ask a practical packing question and I will answer from Twinkle’s live checklist.</p>
+        <p>Ask about an item, bag, or what to pack next.</p>
         <div className="ai-prompts">
           {["What is urgent?", "What is left in hand luggage?", "What should I pack next?"].map((prompt) => (
             <button key={prompt} onClick={() => { setQuestion(prompt); askAssistant(prompt); }}>{prompt}</button>
