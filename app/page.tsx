@@ -58,14 +58,16 @@ const makeId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.
 
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
 const normalizeSupabaseUrl = (value: string) => value.trim().replace(/\/rest\/v1\/?$/i, "").replace(/\/+$/, "");
+const defaultSupabaseUrl = "https://bjvmiqsspriiqjfltznw.supabase.co";
+const defaultSupabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqdm1pcXNzcHJpaXFqZmx0em51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDM4NjksImV4cCI6MjEwMTg3OTg2OX0.a8G_FoyPv60IJ0e7l3WEVnZAuWWXNuSFV8deR5XU1mc";
 const friendlyCloudError = (message: string) => {
   if (/failed to fetch/i.test(message)) {
     return "Could not reach Supabase. Check that the project URL is the base URL, the anon key is correct, and Anonymous sign-ins are enabled.";
   }
   return message;
 };
-const bundledSupabaseUrl = normalizeSupabaseUrl(env.VITE_SUPABASE_URL ?? "");
-const bundledSupabaseAnonKey = (env.VITE_SUPABASE_ANON_KEY ?? "").trim();
+const bundledSupabaseUrl = normalizeSupabaseUrl(env.VITE_SUPABASE_URL ?? defaultSupabaseUrl);
+const bundledSupabaseAnonKey = (env.VITE_SUPABASE_ANON_KEY ?? defaultSupabaseAnonKey).trim();
 
 const defaultItem = (name: string, priority: Priority = "Important", bag: Bag = "Checked Bag 1", status: Status = "Not Packed", source: Source = "Pack from India"): Item => ({
   id: makeId("item"),
@@ -553,6 +555,14 @@ export default function Home() {
     return () => window.clearTimeout(timeout);
   }, [cloudChecklistId, cloudUser, saveToCloud, state, supabase]);
 
+  useEffect(() => {
+    if (!supabase || !cloudUser || cloudChecklistId || cloudHydrating.current) return;
+    const timeout = window.setTimeout(() => {
+      void saveToCloud(true);
+    }, 1200);
+    return () => window.clearTimeout(timeout);
+  }, [cloudChecklistId, cloudUser, saveToCloud, supabase]);
+
   return (
     <main className="app-shell">
       <header className={`hero ${tab !== "overview" ? "hero-compact" : ""}`}>
@@ -850,11 +860,11 @@ function CloudSyncPanel({
       <div>
         <span className="section-label">Cloud sync</span>
         <h2>Save across devices</h2>
-        <p className="muted">Local autosave stays on. Supabase Free can create a server copy without asking Twinkle to sign in.</p>
+        <p className="muted">Cloud backup starts automatically. Local autosave stays on as a fallback.</p>
       </div>
 
       <details className="cloud-details" open={!configured}>
-        <summary>{configured ? "Cloud settings" : "Connect Supabase Free"}</summary>
+        <summary>{configured ? "Troubleshoot cloud settings" : "Connect Supabase Free"}</summary>
         <div className="cloud-config">
           <input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="Supabase project URL" />
           <input value={anonKey} onChange={(event) => setAnonKey(event.target.value)} placeholder="Supabase anon key" />
@@ -864,14 +874,14 @@ function CloudSyncPanel({
 
       {configured && !cloudUserId && (
         <div className="cloud-config">
-          <button disabled={busy} onClick={onStartSync}>Start cloud sync</button>
+          <button disabled={busy} onClick={onStartSync}>Start cloud backup</button>
         </div>
       )}
 
       {configured && cloudUserId && (
         <div className="cloud-actions">
           <p className="cloud-user">Cloud sync active for this browser.</p>
-          <button disabled={busy} onClick={onSaveCloud}>Save now</button>
+          <button disabled={busy} onClick={onSaveCloud}>Backup now</button>
           <button disabled={busy} onClick={onLoadCloud}>Load cloud copy</button>
           <button disabled={busy || !hasCloudChecklist} className="danger" onClick={onDeleteCloud}>Delete cloud copy</button>
           <button disabled={busy} onClick={onSignOut}>Sign out</button>
