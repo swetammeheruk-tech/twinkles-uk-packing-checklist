@@ -57,8 +57,15 @@ const sources: Source[] = ["Pack from India", "Buy in UK", "Undecided"];
 const makeId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
-const bundledSupabaseUrl = env.VITE_SUPABASE_URL ?? "";
-const bundledSupabaseAnonKey = env.VITE_SUPABASE_ANON_KEY ?? "";
+const normalizeSupabaseUrl = (value: string) => value.trim().replace(/\/rest\/v1\/?$/i, "").replace(/\/+$/, "");
+const friendlyCloudError = (message: string) => {
+  if (/failed to fetch/i.test(message)) {
+    return "Could not reach Supabase. Check that the project URL is the base URL, the anon key is correct, and Anonymous sign-ins are enabled.";
+  }
+  return message;
+};
+const bundledSupabaseUrl = normalizeSupabaseUrl(env.VITE_SUPABASE_URL ?? "");
+const bundledSupabaseAnonKey = (env.VITE_SUPABASE_ANON_KEY ?? "").trim();
 
 const defaultItem = (name: string, priority: Priority = "Important", bag: Bag = "Checked Bag 1", status: Status = "Not Packed", source: Source = "Pack from India"): Item => ({
   id: makeId("item"),
@@ -252,8 +259,10 @@ export default function Home() {
   const cloudHydrating = useRef(false);
 
   const supabase = useMemo<SupabaseClient | null>(() => {
-    if (!cloudUrl || !cloudKey) return null;
-    return createClient(cloudUrl, cloudKey, {
+    const normalizedUrl = normalizeSupabaseUrl(cloudUrl);
+    const normalizedKey = cloudKey.trim();
+    if (!normalizedUrl || !normalizedKey) return null;
+    return createClient(normalizedUrl, normalizedKey, {
       auth: {
         persistSession: true,
         storageKey: "twinkles-packing-cloud-auth",
@@ -267,8 +276,8 @@ export default function Home() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as { url?: string; key?: string };
-        setCloudUrl(parsed.url || bundledSupabaseUrl);
-        setCloudKey(parsed.key || bundledSupabaseAnonKey);
+        setCloudUrl(normalizeSupabaseUrl(parsed.url || bundledSupabaseUrl));
+        setCloudKey((parsed.key || bundledSupabaseAnonKey).trim());
       } catch {
         setCloudUrl(bundledSupabaseUrl);
         setCloudKey(bundledSupabaseAnonKey);
@@ -293,7 +302,7 @@ export default function Home() {
       setCloudStatus("Starting cloud sync...");
       const { data: anonymousData, error } = await supabase.auth.signInAnonymously();
       setCloudUser(anonymousData.user ?? null);
-      setCloudStatus(error ? `${error.message}. Enable Anonymous sign-ins in Supabase Auth settings.` : "Cloud sync is ready.");
+      setCloudStatus(error ? friendlyCloudError(error.message) : "Cloud sync is ready.");
     });
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -420,13 +429,15 @@ export default function Home() {
   };
 
   const saveCloudSettings = () => {
-    if (!cloudUrl.trim() || !cloudKey.trim()) {
+    const normalizedUrl = normalizeSupabaseUrl(cloudUrl);
+    const normalizedKey = cloudKey.trim();
+    if (!normalizedUrl || !normalizedKey) {
       setCloudStatus("Add your Supabase URL and anon key first.");
       return;
     }
-    localStorage.setItem(cloudSettingsKey, JSON.stringify({ url: cloudUrl.trim(), key: cloudKey.trim() }));
-    setCloudUrl(cloudUrl.trim());
-    setCloudKey(cloudKey.trim());
+    localStorage.setItem(cloudSettingsKey, JSON.stringify({ url: normalizedUrl, key: normalizedKey }));
+    setCloudUrl(normalizedUrl);
+    setCloudKey(normalizedKey);
     setCloudStatus("Supabase settings saved. Start cloud sync when ready.");
   };
 
@@ -436,7 +447,7 @@ export default function Home() {
     setCloudStatus("Starting cloud sync...");
     const { error } = await supabase.auth.signInAnonymously();
     setCloudBusy(false);
-    setCloudStatus(error ? `${error.message}. Enable Anonymous sign-ins in Supabase Auth settings.` : "Cloud sync started. Save this checklist to create the server copy.");
+    setCloudStatus(error ? friendlyCloudError(error.message) : "Cloud sync started. Save this checklist to create the server copy.");
   };
 
   const saveToCloud = useCallback(async (silent = false) => {
@@ -469,7 +480,7 @@ export default function Home() {
 
     if (!silent) setCloudBusy(false);
     if (result.error) {
-      setCloudStatus(result.error.message);
+      setCloudStatus(friendlyCloudError(result.error.message));
       return;
     }
 
@@ -498,7 +509,7 @@ export default function Home() {
 
     setCloudBusy(false);
     if (result.error) {
-      setCloudStatus(result.error.message);
+      setCloudStatus(friendlyCloudError(result.error.message));
       return;
     }
     const row = result.data?.[0];
@@ -526,7 +537,7 @@ export default function Home() {
     const { error } = await supabase.from("packing_checklists").delete().eq("id", cloudChecklistId);
     setCloudBusy(false);
     if (error) {
-      setCloudStatus(error.message);
+      setCloudStatus(friendlyCloudError(error.message));
       return;
     }
     setCloudChecklistId("");
@@ -842,16 +853,14 @@ function CloudSyncPanel({
         <p className="muted">Local autosave stays on. Supabase Free can create a server copy without asking Twinkle to sign in.</p>
       </div>
 
-      {!configured && (
-        <details className="cloud-details">
-          <summary>Connect Supabase Free</summary>
-          <div className="cloud-config">
-            <input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="Supabase project URL" />
-            <input value={anonKey} onChange={(event) => setAnonKey(event.target.value)} placeholder="Supabase anon key" />
-            <button onClick={onSaveSettings}>Connect Supabase</button>
-          </div>
-        </details>
-      )}
+      <details className="cloud-details" open={!configured}>
+        <summary>{configured ? "Cloud settings" : "Connect Supabase Free"}</summary>
+        <div className="cloud-config">
+          <input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="Supabase project URL" />
+          <input value={anonKey} onChange={(event) => setAnonKey(event.target.value)} placeholder="Supabase anon key" />
+          <button onClick={onSaveSettings}>{configured ? "Update settings" : "Connect Supabase"}</button>
+        </div>
+      </details>
 
       {configured && !cloudUserId && (
         <div className="cloud-config">
