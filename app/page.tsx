@@ -1019,10 +1019,34 @@ function PackingAssistant({
     .sort((a, b) => b.left - a.left)[0];
 
   const formatItems = (list: typeof remainingItems) => list.slice(0, 6).map((item) => item.name).join(", ");
+  const normalizeWords = (value: string) => value.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((word) => word.length > 2);
+  const findMentionedItems = (prompt: string) => {
+    const words = normalizeWords(prompt);
+    return items
+      .map((item) => {
+        const itemWords = normalizeWords(item.name);
+        const exact = prompt.toLowerCase().includes(item.name.toLowerCase());
+        const matches = itemWords.filter((word) => words.includes(word)).length;
+        return { item, score: exact ? 10 : matches };
+      })
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(({ item }) => item);
+  };
+
   const askAssistant = (prompt: string) => {
     const text = prompt.trim();
     const lower = text.toLowerCase();
     if (!text) return;
+
+    const matchedItems = findMentionedItems(text);
+    if (matchedItems.length) {
+      const item = matchedItems[0];
+      const packedText = item.status === "Packed" ? "already packed" : item.status.toLowerCase();
+      setAnswer(`${item.name} is in ${item.bag}. It is a ${item.priority.toLowerCase()} item under ${item.categoryIcon} ${item.categoryName}, quantity ${item.qty}, and it is currently ${packedText}.${item.notes ? ` Note: ${item.notes}` : ""}`);
+      return;
+    }
 
     if (lower.includes("hand") || lower.includes("passport") || lower.includes("flight")) {
       const handLeft = remainingItems.filter((item) => item.bag === "Hand Luggage");
@@ -1051,7 +1075,7 @@ function PackingAssistant({
       return;
     }
 
-    setAnswer(`I checked the live checklist. Best focus now: ${essential ? `${essential} essential items` : `${remaining} remaining items`} and ${handTotal - handReady} hand-luggage core items left.`);
+    setAnswer(`I checked the live checklist, but I could not find a specific item from that question. Try asking "where is passport?", "what is left in hand luggage?", "what should I buy?", or "what is urgent?". Best focus now: ${essential ? `${essential} essential items` : `${remaining} remaining items`} and ${handTotal - handReady} hand-luggage core items left.`);
   };
 
   return (
