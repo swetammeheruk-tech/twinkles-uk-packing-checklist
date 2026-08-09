@@ -34,9 +34,10 @@ This app can sync checklist data with Supabase Free.
 
 1. Create a free Supabase project.
 2. In Supabase SQL Editor, run `supabase/schema.sql`.
-3. In GitHub, add repository secrets:
+3. In Supabase Auth settings, enable anonymous sign-ins.
+4. In GitHub, add repository secrets:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-4. Re-run the GitHub Pages workflow.
+5. Re-run the GitHub Pages workflow.
 
 Without those secrets, the app still works with browser LocalStorage.

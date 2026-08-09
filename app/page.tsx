@@ -244,7 +244,6 @@ export default function Home() {
   const [renameValue, setRenameValue] = useState("");
   const [cloudUrl, setCloudUrl] = useState(bundledSupabaseUrl);
   const [cloudKey, setCloudKey] = useState(bundledSupabaseAnonKey);
-  const [cloudEmail, setCloudEmail] = useState("");
   const [cloudUser, setCloudUser] = useState<User | null>(null);
   const [cloudStatus, setCloudStatus] = useState("Local autosave is active.");
   const [cloudChecklistId, setCloudChecklistId] = useState("");
@@ -285,9 +284,16 @@ export default function Home() {
       return;
     }
 
-    supabase.auth.getUser().then(({ data }) => {
-      setCloudUser(data.user ?? null);
-      setCloudStatus(data.user ? "Cloud sync is ready." : "Cloud is connected. Sign in to sync.");
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data.user) {
+        setCloudUser(data.user);
+        setCloudStatus("Cloud sync is ready.");
+        return;
+      }
+      setCloudStatus("Starting cloud sync...");
+      const { data: anonymousData, error } = await supabase.auth.signInAnonymously();
+      setCloudUser(anonymousData.user ?? null);
+      setCloudStatus(error ? `${error.message}. Enable Anonymous sign-ins in Supabase Auth settings.` : "Cloud sync is ready.");
     });
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -421,20 +427,16 @@ export default function Home() {
     localStorage.setItem(cloudSettingsKey, JSON.stringify({ url: cloudUrl.trim(), key: cloudKey.trim() }));
     setCloudUrl(cloudUrl.trim());
     setCloudKey(cloudKey.trim());
-    setCloudStatus("Supabase settings saved. Sign in to start cloud sync.");
+    setCloudStatus("Supabase settings saved. Start cloud sync when ready.");
   };
 
-  const signInCloud = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!supabase || !cloudEmail.trim()) return;
+  const startCloudSync = async () => {
+    if (!supabase) return;
     setCloudBusy(true);
-    setCloudStatus("Sending sign-in link...");
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cloudEmail.trim(),
-      options: { emailRedirectTo: window.location.href.split("#")[0] },
-    });
+    setCloudStatus("Starting cloud sync...");
+    const { error } = await supabase.auth.signInAnonymously();
     setCloudBusy(false);
-    setCloudStatus(error ? error.message : "Check your email for the Supabase sign-in link.");
+    setCloudStatus(error ? `${error.message}. Enable Anonymous sign-ins in Supabase Auth settings.` : "Cloud sync started. Save this checklist to create the server copy.");
   };
 
   const saveToCloud = useCallback(async (silent = false) => {
@@ -577,18 +579,16 @@ export default function Home() {
           </div>
           <CloudSyncPanel
             configured={Boolean(supabase)}
-            email={cloudEmail}
-            setEmail={setCloudEmail}
             url={cloudUrl}
             setUrl={setCloudUrl}
             anonKey={cloudKey}
             setAnonKey={setCloudKey}
-            userEmail={cloudUser?.email ?? ""}
+            cloudUserId={cloudUser?.id ?? ""}
             status={cloudStatus}
             busy={cloudBusy}
             hasCloudChecklist={Boolean(cloudChecklistId)}
             onSaveSettings={saveCloudSettings}
-            onSignIn={signInCloud}
+            onStartSync={startCloudSync}
             onSignOut={() => supabase?.auth.signOut()}
             onSaveCloud={() => void saveToCloud(false)}
             onLoadCloud={loadFromCloud}
@@ -803,36 +803,32 @@ function Stats({ total, packed, remaining, essential }: { total: number; packed:
 
 function CloudSyncPanel({
   configured,
-  email,
-  setEmail,
   url,
   setUrl,
   anonKey,
   setAnonKey,
-  userEmail,
+  cloudUserId,
   status,
   busy,
   hasCloudChecklist,
   onSaveSettings,
-  onSignIn,
+  onStartSync,
   onSignOut,
   onSaveCloud,
   onLoadCloud,
   onDeleteCloud,
 }: {
   configured: boolean;
-  email: string;
-  setEmail: (value: string) => void;
   url: string;
   setUrl: (value: string) => void;
   anonKey: string;
   setAnonKey: (value: string) => void;
-  userEmail: string;
+  cloudUserId: string;
   status: string;
   busy: boolean;
   hasCloudChecklist: boolean;
   onSaveSettings: () => void;
-  onSignIn: (event: FormEvent) => void;
+  onStartSync: () => void;
   onSignOut: () => void;
   onSaveCloud: () => void;
   onLoadCloud: () => void;
@@ -843,7 +839,7 @@ function CloudSyncPanel({
       <div>
         <span className="section-label">Cloud sync</span>
         <h2>Save across devices</h2>
-        <p className="muted">Local autosave stays on. Supabase Free adds a server copy so the checklist can be restored on another phone or laptop.</p>
+        <p className="muted">Local autosave stays on. Supabase Free can create a server copy without asking Twinkle to sign in.</p>
       </div>
 
       {!configured && (
@@ -857,16 +853,15 @@ function CloudSyncPanel({
         </details>
       )}
 
-      {configured && !userEmail && (
-        <form className="cloud-config" onSubmit={onSignIn}>
-          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email for cloud sync" />
-          <button disabled={busy}>Send sign-in link</button>
-        </form>
+      {configured && !cloudUserId && (
+        <div className="cloud-config">
+          <button disabled={busy} onClick={onStartSync}>Start cloud sync</button>
+        </div>
       )}
 
-      {configured && userEmail && (
+      {configured && cloudUserId && (
         <div className="cloud-actions">
-          <p className="cloud-user">Signed in as <strong>{userEmail}</strong></p>
+          <p className="cloud-user">Cloud sync active for this browser.</p>
           <button disabled={busy} onClick={onSaveCloud}>Save now</button>
           <button disabled={busy} onClick={onLoadCloud}>Load cloud copy</button>
           <button disabled={busy || !hasCloudChecklist} className="danger" onClick={onDeleteCloud}>Delete cloud copy</button>
