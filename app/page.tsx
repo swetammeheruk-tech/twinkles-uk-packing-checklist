@@ -1083,17 +1083,23 @@ function PackingAssistant({
       <div className="ai-copy">
         <span className="section-label ai-label">AI packing summary</span>
         <h2>Ask Twinkle’s packing assistant</h2>
-        <p>{answer}</p>
+        <p>Ask a practical packing question and I will answer from Twinkle’s live checklist.</p>
         <div className="ai-prompts">
           {["What is urgent?", "What is left in hand luggage?", "What should I pack next?"].map((prompt) => (
             <button key={prompt} onClick={() => { setQuestion(prompt); askAssistant(prompt); }}>{prompt}</button>
           ))}
         </div>
       </div>
-      <form className="ai-ask" onSubmit={(event) => { event.preventDefault(); askAssistant(question); }}>
-        <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about documents, bags, buying, or progress..." />
-        <button className="primary">Ask</button>
-      </form>
+      <div className="ai-chat">
+        <form className="ai-ask" onSubmit={(event) => { event.preventDefault(); askAssistant(question); }}>
+          <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about documents, bags, buying, or progress..." />
+          <button className="primary">Ask</button>
+        </form>
+        <div className="ai-answer">
+          <span>Answer</span>
+          <p>{answer}</p>
+        </div>
+      </div>
       <div className="ai-summary-grid">
         <span><b>{progress}%</b><small>packed</small></span>
         <span><b>{essential}</b><small>essentials left</small></span>

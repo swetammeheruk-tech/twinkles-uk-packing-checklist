@@ -444,6 +444,7 @@ button.save-pill {
 }
 
 .ai-copy,
+.ai-chat,
 .ai-ask,
 .ai-summary-grid {
   position: relative;
@@ -467,7 +468,8 @@ button.save-pill {
 }
 
 .ai-prompts,
-.ai-ask {
+.ai-ask,
+.ai-chat {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -481,6 +483,7 @@ button.save-pill {
 }
 
 .ai-ask {
+  width: 100%;
   align-self: end;
   padding: 12px;
   border: 1px solid rgba(31, 90, 166, 0.12);
@@ -488,9 +491,39 @@ button.save-pill {
   background: rgba(255,255,255,0.7);
 }
 
+.ai-chat {
+  align-content: start;
+}
+
 .ai-ask input {
   flex: 1 1 220px;
   background: #fff;
+}
+
+.ai-answer {
+  width: 100%;
+  border: 1px solid rgba(15, 159, 154, 0.18);
+  border-radius: 8px;
+  padding: 12px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.82), rgba(248,253,252,0.9)),
+    rgba(255,255,255,0.7);
+}
+
+.ai-answer span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--teal);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-answer p {
+  margin: 0;
+  color: #24324a;
+  line-height: 1.45;
 }
 
 .ai-summary-grid {
@@ -1038,6 +1071,10 @@ button.save-pill {
     display: grid;
     grid-template-columns: 1fr;
     padding: 10px;
+  }
+
+  .ai-chat {
+    display: grid;
   }
 
   .ai-summary-grid {
