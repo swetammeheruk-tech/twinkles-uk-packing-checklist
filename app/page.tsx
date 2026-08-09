@@ -958,14 +958,20 @@ function CloudSyncPanel({
 function ProgressPanel({ categories, total, packed, progress }: { categories: Category[]; total: number; packed: number; progress: number }) {
   return (
     <section className="panel progress-panel">
-      <h2>Overall Packing</h2>
-      <strong>{progress}% Complete</strong>
-      <p>{packed} / {total} items packed</p>
+      <div className="progress-head">
+        <div>
+          <h2>Overall Packing</h2>
+          <p>{packed} / {total} items packed</p>
+        </div>
+        <strong>{progress}%</strong>
+      </div>
       <div className="bar"><span style={{ width: `${progress}%` }} /></div>
-      {categories.map((cat) => {
-        const pct = cat.items.length ? Math.round((cat.items.filter((item) => item.status === "Packed").length / cat.items.length) * 100) : 0;
-        return <div className="cat-progress" key={cat.id}><span>{cat.icon} {cat.name}</span><div className="bar small"><span style={{ width: `${pct}%` }} /></div><b>{pct}%</b></div>;
-      })}
+      <div className="cat-progress-list">
+        {categories.map((cat) => {
+          const pct = cat.items.length ? Math.round((cat.items.filter((item) => item.status === "Packed").length / cat.items.length) * 100) : 0;
+          return <div className="cat-progress" key={cat.id}><span>{cat.icon} {cat.name}</span><b>{pct}%</b><div className="bar small"><span style={{ width: `${pct}%` }} /></div></div>;
+        })}
+      </div>
     </section>
   );
 }

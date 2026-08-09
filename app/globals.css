@@ -388,15 +388,62 @@ button.save-pill {
 }
 
 .bar.small {
-  height: 8px;
+  height: 4px;
+}
+
+.progress-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progress-head h2,
+.progress-head p {
+  margin-bottom: 0;
+}
+
+.progress-head strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.cat-progress-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+  margin-top: 12px;
 }
 
 .cat-progress {
   display: grid;
-  grid-template-columns: 170px 1fr 48px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
   align-items: center;
-  margin-top: 12px;
+  border: 1px solid rgba(220, 228, 238, 0.8);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.58);
+}
+
+.cat-progress span {
+  min-width: 0;
+  overflow: hidden;
+  color: #344054;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-progress b {
+  color: var(--blue);
+  font-size: 0.86rem;
+}
+
+.cat-progress .bar {
+  grid-column: 1 / -1;
 }
 
 .alert {
@@ -1220,11 +1267,16 @@ button.save-pill {
   }
 
   .cat-progress {
-    grid-template-columns: 1fr 54px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 5px 7px;
   }
 
   .cat-progress .bar {
     grid-column: 1 / -1;
+  }
+
+  .cat-progress-list {
+    gap: 7px;
   }
 
   .bag-card {
