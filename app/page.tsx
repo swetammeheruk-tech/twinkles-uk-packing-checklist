@@ -57,8 +57,13 @@ const sources: Source[] = ["Pack from India", "Buy in UK", "Undecided"];
 const makeId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
-const normalizeSupabaseUrl = (value: string) => value.trim().replace(/\/rest\/v1\/?$/i, "").replace(/\/+$/, "");
-const defaultSupabaseUrl = "https://bjvmiqsspriiqjfltznw.supabase.co";
+const normalizeSupabaseUrl = (value: string) =>
+  value
+    .trim()
+    .replace(/\/rest\/v1\/?$/i, "")
+    .replace(/\/+$/, "")
+    .replace("bjvmiqsspriiqjfltznw.supabase.co", "bjvmiqsspriiqjfltznu.supabase.co");
+const defaultSupabaseUrl = "https://bjvmiqsspriiqjfltznu.supabase.co";
 const defaultSupabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqdm1pcXNzcHJpaXFqZmx0em51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDM4NjksImV4cCI6MjEwMTg3OTg2OX0.a8G_FoyPv60IJ0e7l3WEVnZAuWWXNuSFV8deR5XU1mc";
 const friendlyCloudError = (message: string) => {
   if (/failed to fetch/i.test(message)) {
