@@ -1022,28 +1022,29 @@ button.save-pill {
   }
 
   .hero-compact {
-    grid-template-columns: minmax(0, 1fr) 78px;
+    grid-template-columns: minmax(0, 1fr) 66px;
     align-items: center;
-    padding: 14px 16px;
+    padding: 10px 12px;
   }
 
   .hero-compact h1 {
-    font-size: 1.32rem;
+    font-size: 1.08rem;
+    line-height: 1.08;
   }
 
   .hero-compact .journey {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
   }
 
   .hero-compact .progress-orbit {
-    width: 78px;
-    min-height: 58px;
+    width: 66px;
+    min-height: 46px;
     display: grid;
-    padding: 8px;
+    padding: 6px;
   }
 
   .hero-compact .progress-orbit span {
-    font-size: 1.18rem;
+    font-size: 1.02rem;
   }
 
   .hero-compact .progress-orbit small {
@@ -1199,30 +1200,57 @@ button.save-pill {
   }
 
   .toolbar {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     position: static;
+    gap: 7px;
+    padding: 9px;
+  }
+
+  .toolbar input {
+    grid-column: 1 / -1;
+  }
+
+  .toolbar input,
+  .toolbar select {
+    min-height: 38px;
+    padding: 7px 8px;
+    font-size: 0.82rem;
   }
 
   .actions-row {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
   }
 
   .actions-row button {
     width: auto;
-    min-height: 40px;
-    font-size: 0.84rem;
+    min-height: 34px;
+    padding: 0 7px;
+    font-size: 0.72rem;
   }
 
   .new-category {
     grid-column: 1 / -1;
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) 104px;
+    gap: 7px;
+  }
+
+  .new-category input {
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 0.9rem;
   }
 
   .new-category button {
     width: 100%;
+    min-height: 40px;
+  }
+
+  .actions-row .danger {
+    grid-column: span 1;
   }
 
   .category-head {

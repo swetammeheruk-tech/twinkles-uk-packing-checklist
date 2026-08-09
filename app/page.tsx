@@ -693,7 +693,7 @@ export default function Home() {
             <button onClick={exportBackup}>Export Backup</button>
             <button onClick={() => importRef.current?.click()}>Import Backup</button>
             <button onClick={copyChecklist}>Share Checklist</button>
-            <button onClick={() => window.print()}>Print / Save PDF</button>
+            <button onClick={() => window.print()}>Print</button>
             <button className="danger" onClick={resetAll}>Reset Checklist</button>
             <input ref={importRef} type="file" accept="application/json" hidden onChange={importBackup} />
           </div>
