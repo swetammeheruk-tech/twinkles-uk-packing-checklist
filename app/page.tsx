@@ -645,11 +645,21 @@ export default function Home() {
             <p>Your checklist is saved automatically in this browser. Keep packing progress, categories, and notes updated here.</p>
             <button className="primary" onClick={() => setTab("checklist")}>Continue Packing</button>
           </div>
+          <PackingAssistant
+            items={allItems}
+            categories={state.categories}
+            packed={packedCount}
+            remaining={remainingCount}
+            essential={essentialRemaining}
+            progress={progress}
+            handReady={handReady}
+            handTotal={handCore.length}
+            onOpenChecklist={() => setTab("checklist")}
+          />
           <Stats total={allItems.length} packed={packedCount} remaining={remainingCount} essential={essentialRemaining} />
           <ProgressPanel categories={state.categories} total={allItems.length} packed={packedCount} progress={progress} />
           <EssentialAlert items={essentialItems} />
           <SuggestionPanel suggestions={suggestions} dismiss={(idea) => setState((s) => ({ ...s, dismissedSuggestions: [...s.dismissedSuggestions, idea] }))} />
-          <HandLuggageSummary items={handLuggage} ready={handReady} total={handCore.length} />
         </section>
       )}
 
@@ -978,14 +988,94 @@ function SuggestionPanel({ suggestions, dismiss }: { suggestions: string[]; dism
   );
 }
 
-function HandLuggageSummary({ items, ready, total }: { items: Item[]; ready: number; total: number }) {
+function PackingAssistant({
+  items,
+  categories,
+  packed,
+  remaining,
+  essential,
+  progress,
+  handReady,
+  handTotal,
+  onOpenChecklist,
+}: {
+  items: (Item & { categoryId: string; categoryName: string; categoryIcon: string })[];
+  categories: Category[];
+  packed: number;
+  remaining: number;
+  essential: number;
+  progress: number;
+  handReady: number;
+  handTotal: number;
+  onOpenChecklist: () => void;
+}) {
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("Ask me what is left, what is urgent, what goes in hand luggage, or what Twinkle should pack next.");
+  const remainingItems = items.filter((item) => item.status !== "Packed");
+  const essentialItems = remainingItems.filter((item) => item.priority === "Essential");
+  const buyItems = items.filter((item) => item.status === "Need to Buy" || item.status === "Buy in UK" || item.source === "Buy in UK");
+  const topCategory = categories
+    .map((cat) => ({ name: cat.name, icon: cat.icon, left: cat.items.filter((item) => item.status !== "Packed").length }))
+    .sort((a, b) => b.left - a.left)[0];
+
+  const formatItems = (list: typeof remainingItems) => list.slice(0, 6).map((item) => item.name).join(", ");
+  const askAssistant = (prompt: string) => {
+    const text = prompt.trim();
+    const lower = text.toLowerCase();
+    if (!text) return;
+
+    if (lower.includes("hand") || lower.includes("passport") || lower.includes("flight")) {
+      const handLeft = remainingItems.filter((item) => item.bag === "Hand Luggage");
+      setAnswer(handLeft.length ? `Hand luggage is ${handReady}/${handTotal} ready. Pack these first: ${formatItems(handLeft)}.` : "Hand luggage looks ready. Keep passport, visa, ticket, and boarding pass easy to reach on travel day.");
+      return;
+    }
+
+    if (lower.includes("essential") || lower.includes("urgent") || lower.includes("important")) {
+      setAnswer(essentialItems.length ? `Most urgent: ${formatItems(essentialItems)}. Finish essentials before clothes or extras.` : "All essential items are packed. Nice. Next, check important documents, chargers, medicines, and luggage weight.");
+      return;
+    }
+
+    if (lower.includes("buy") || lower.includes("shop")) {
+      setAnswer(buyItems.length ? `Buy list: ${formatItems(buyItems)}. Keep bulky or easy-to-find items for the UK if luggage space is tight.` : "There is no active buy list right now. If something is bulky, move it to Buy in UK from the checklist.");
+      return;
+    }
+
+    if (lower.includes("progress") || lower.includes("done") || lower.includes("left") || lower.includes("remaining")) {
+      setAnswer(`Twinkle is ${progress}% packed: ${packed} done and ${remaining} left. The biggest open area is ${topCategory?.icon ?? ""} ${topCategory?.name ?? "the checklist"} with ${topCategory?.left ?? 0} items left.`);
+      return;
+    }
+
+    if (lower.includes("next") || lower.includes("start")) {
+      const next = essentialItems[0] ?? remainingItems[0];
+      setAnswer(next ? `Pack next: ${next.name}. It is ${next.priority.toLowerCase()} and belongs in ${next.bag}.` : "Everything is packed. Do one final travel-day check and keep documents in hand luggage.");
+      return;
+    }
+
+    setAnswer(`I checked the live checklist. Best focus now: ${essential ? `${essential} essential items` : `${remaining} remaining items`} and ${handTotal - handReady} hand-luggage core items left.`);
+  };
+
   return (
-    <section className="panel hand">
-      <h2>🎒 Hand Luggage Checklist</h2>
-      <strong>Hand Luggage Ready: {ready} / {total}</strong>
-      <div className="item-list compact">
-        {items.slice(0, 18).map((item) => <div className={`mini ${item.status === "Packed" ? "packed" : ""}`} key={item.id}><span>{item.status === "Packed" ? "☑" : "☐"} {item.name}</span><small>{item.priority}</small></div>)}
+    <section className="panel ai-panel">
+      <div className="ai-copy">
+        <span className="section-label ai-label">AI packing summary</span>
+        <h2>Ask Twinkle’s packing assistant</h2>
+        <p>{answer}</p>
+        <div className="ai-prompts">
+          {["What is urgent?", "What is left in hand luggage?", "What should I pack next?"].map((prompt) => (
+            <button key={prompt} onClick={() => { setQuestion(prompt); askAssistant(prompt); }}>{prompt}</button>
+          ))}
+        </div>
       </div>
+      <form className="ai-ask" onSubmit={(event) => { event.preventDefault(); askAssistant(question); }}>
+        <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about documents, bags, buying, or progress..." />
+        <button className="primary">Ask</button>
+      </form>
+      <div className="ai-summary-grid">
+        <span><b>{progress}%</b><small>packed</small></span>
+        <span><b>{essential}</b><small>essentials left</small></span>
+        <span><b>{handReady}/{handTotal}</b><small>hand luggage</small></span>
+      </div>
+      <button className="ai-link" onClick={onOpenChecklist}>Open full checklist</button>
     </section>
   );
 }
