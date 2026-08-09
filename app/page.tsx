@@ -267,6 +267,10 @@ export default function Home() {
   const cloudHydrating = useRef(false);
   const latestCloudUpdatedAt = useRef("");
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+  }, [tab]);
+
   const supabase = useMemo<SupabaseClient | null>(() => {
     const normalizedUrl = normalizeSupabaseUrl(cloudUrl);
     const normalizedKey = cloudKey.trim();
