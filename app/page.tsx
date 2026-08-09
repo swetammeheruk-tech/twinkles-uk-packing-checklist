@@ -1,6 +1,7 @@
 "use client";
 
-import { ChangeEvent, CSSProperties, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, CSSProperties, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createClient, SupabaseClient, User } from "@supabase/supabase-js";
 
 type Priority = "Essential" | "Important" | "Optional";
 type Bag = "Hand Luggage" | "Checked Bag 1" | "Checked Bag 2" | "Personal Bag" | "Buy in UK";
@@ -45,6 +46,8 @@ type AppState = {
 };
 
 const storageKey = "twinkles-uk-packing-checklist-v1";
+const cloudSettingsKey = "twinkles-cloud-settings-v1";
+const cloudChecklistKey = "twinkles-cloud-checklist-id-v1";
 
 const bags: Bag[] = ["Hand Luggage", "Checked Bag 1", "Checked Bag 2", "Personal Bag", "Buy in UK"];
 const priorities: Priority[] = ["Essential", "Important", "Optional"];
@@ -52,6 +55,10 @@ const statuses: Status[] = ["Not Packed", "Packed", "Need to Buy", "Buy in UK"];
 const sources: Source[] = ["Pack from India", "Buy in UK", "Undecided"];
 
 const makeId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+const bundledSupabaseUrl = env.VITE_SUPABASE_URL ?? "";
+const bundledSupabaseAnonKey = env.VITE_SUPABASE_ANON_KEY ?? "";
 
 const defaultItem = (name: string, priority: Priority = "Important", bag: Bag = "Checked Bag 1", status: Status = "Not Packed", source: Source = "Pack from India"): Item => ({
   id: makeId("item"),
@@ -235,7 +242,61 @@ export default function Home() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [renamingCategory, setRenamingCategory] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [cloudUrl, setCloudUrl] = useState(bundledSupabaseUrl);
+  const [cloudKey, setCloudKey] = useState(bundledSupabaseAnonKey);
+  const [cloudEmail, setCloudEmail] = useState("");
+  const [cloudUser, setCloudUser] = useState<User | null>(null);
+  const [cloudStatus, setCloudStatus] = useState("Local autosave is active.");
+  const [cloudChecklistId, setCloudChecklistId] = useState("");
+  const [cloudBusy, setCloudBusy] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
+  const cloudHydrating = useRef(false);
+
+  const supabase = useMemo<SupabaseClient | null>(() => {
+    if (!cloudUrl || !cloudKey) return null;
+    return createClient(cloudUrl, cloudKey, {
+      auth: {
+        persistSession: true,
+        storageKey: "twinkles-packing-cloud-auth",
+      },
+    });
+  }, [cloudUrl, cloudKey]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(cloudSettingsKey);
+    const checklistId = localStorage.getItem(cloudChecklistKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as { url?: string; key?: string };
+        setCloudUrl(parsed.url || bundledSupabaseUrl);
+        setCloudKey(parsed.key || bundledSupabaseAnonKey);
+      } catch {
+        setCloudUrl(bundledSupabaseUrl);
+        setCloudKey(bundledSupabaseAnonKey);
+      }
+    }
+    if (checklistId) setCloudChecklistId(checklistId);
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) {
+      setCloudUser(null);
+      setCloudStatus("Connect Supabase Free to sync across devices.");
+      return;
+    }
+
+    supabase.auth.getUser().then(({ data }) => {
+      setCloudUser(data.user ?? null);
+      setCloudStatus(data.user ? "Cloud sync is ready." : "Cloud is connected. Sign in to sync.");
+    });
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCloudUser(session?.user ?? null);
+      setCloudStatus(session?.user ? "Cloud sync is ready." : "Signed out. Local autosave is still active.");
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, [supabase]);
 
   const allItems = useMemo(() => state.categories.flatMap((cat) => cat.items.map((item) => ({ ...item, categoryId: cat.id, categoryName: cat.name, categoryIcon: cat.icon }))), [state.categories]);
   const packedCount = allItems.filter((item) => item.status === "Packed").length;
@@ -352,6 +413,133 @@ export default function Home() {
     }
   };
 
+  const saveCloudSettings = () => {
+    if (!cloudUrl.trim() || !cloudKey.trim()) {
+      setCloudStatus("Add your Supabase URL and anon key first.");
+      return;
+    }
+    localStorage.setItem(cloudSettingsKey, JSON.stringify({ url: cloudUrl.trim(), key: cloudKey.trim() }));
+    setCloudUrl(cloudUrl.trim());
+    setCloudKey(cloudKey.trim());
+    setCloudStatus("Supabase settings saved. Sign in to start cloud sync.");
+  };
+
+  const signInCloud = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!supabase || !cloudEmail.trim()) return;
+    setCloudBusy(true);
+    setCloudStatus("Sending sign-in link...");
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cloudEmail.trim(),
+      options: { emailRedirectTo: window.location.href.split("#")[0] },
+    });
+    setCloudBusy(false);
+    setCloudStatus(error ? error.message : "Check your email for the Supabase sign-in link.");
+  };
+
+  const saveToCloud = useCallback(async (silent = false) => {
+    if (!supabase || !cloudUser) {
+      if (!silent) setCloudStatus("Sign in to save this checklist to the server.");
+      return;
+    }
+    if (!silent) setCloudBusy(true);
+    if (!silent) setCloudStatus("Saving checklist to cloud...");
+
+    const payload = {
+      owner_id: cloudUser.id,
+      title: "Twinkle UK Packing Checklist",
+      state,
+      updated_at: new Date().toISOString(),
+    };
+
+    const result = cloudChecklistId
+      ? await supabase
+          .from("packing_checklists")
+          .update(payload)
+          .eq("id", cloudChecklistId)
+          .select("id")
+          .single()
+      : await supabase
+          .from("packing_checklists")
+          .insert(payload)
+          .select("id")
+          .single();
+
+    if (!silent) setCloudBusy(false);
+    if (result.error) {
+      setCloudStatus(result.error.message);
+      return;
+    }
+
+    const id = result.data?.id as string | undefined;
+    if (id) {
+      setCloudChecklistId(id);
+      localStorage.setItem(cloudChecklistKey, id);
+    }
+    setCloudStatus(silent ? "Cloud autosaved." : "Checklist saved to cloud.");
+  }, [cloudChecklistId, cloudUser, state, supabase]);
+
+  const loadFromCloud = async () => {
+    if (!supabase || !cloudUser) {
+      setCloudStatus("Sign in to load your cloud checklist.");
+      return;
+    }
+    setCloudBusy(true);
+    setCloudStatus("Loading checklist from cloud...");
+
+    const query = supabase
+      .from("packing_checklists")
+      .select("id,state,updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    const result = cloudChecklistId ? await query.eq("id", cloudChecklistId) : await query;
+
+    setCloudBusy(false);
+    if (result.error) {
+      setCloudStatus(result.error.message);
+      return;
+    }
+    const row = result.data?.[0];
+    if (!row) {
+      setCloudStatus("No cloud checklist found yet. Save this one first.");
+      return;
+    }
+    cloudHydrating.current = true;
+    setState(row.state as AppState);
+    setCloudChecklistId(row.id);
+    localStorage.setItem(cloudChecklistKey, row.id);
+    setCloudStatus("Cloud checklist loaded.");
+    window.setTimeout(() => {
+      cloudHydrating.current = false;
+    }, 800);
+  };
+
+  const deleteCloudChecklist = async () => {
+    if (!supabase || !cloudUser || !cloudChecklistId) {
+      setCloudStatus("No cloud checklist is selected.");
+      return;
+    }
+    if (!confirm("Delete the cloud copy of this checklist? Your local browser copy will remain.")) return;
+    setCloudBusy(true);
+    const { error } = await supabase.from("packing_checklists").delete().eq("id", cloudChecklistId);
+    setCloudBusy(false);
+    if (error) {
+      setCloudStatus(error.message);
+      return;
+    }
+    setCloudChecklistId("");
+    localStorage.removeItem(cloudChecklistKey);
+    setCloudStatus("Cloud checklist deleted. Local copy is still saved here.");
+  };
+
+  useEffect(() => {
+    if (!supabase || !cloudUser || !cloudChecklistId || cloudHydrating.current) return;
+    const timeout = window.setTimeout(() => {
+      void saveToCloud(true);
+    }, 1600);
+    return () => window.clearTimeout(timeout);
+  }, [cloudChecklistId, cloudUser, saveToCloud, state, supabase]);
+
   return (
     <main className="app-shell">
       <header className={`hero ${tab !== "overview" ? "hero-compact" : ""}`}>
@@ -387,6 +575,25 @@ export default function Home() {
             <p>Your checklist is saved automatically in this browser. Keep packing progress, categories, and notes updated here.</p>
             <button className="primary" onClick={() => setTab("checklist")}>Continue Packing</button>
           </div>
+          <CloudSyncPanel
+            configured={Boolean(supabase)}
+            email={cloudEmail}
+            setEmail={setCloudEmail}
+            url={cloudUrl}
+            setUrl={setCloudUrl}
+            anonKey={cloudKey}
+            setAnonKey={setCloudKey}
+            userEmail={cloudUser?.email ?? ""}
+            status={cloudStatus}
+            busy={cloudBusy}
+            hasCloudChecklist={Boolean(cloudChecklistId)}
+            onSaveSettings={saveCloudSettings}
+            onSignIn={signInCloud}
+            onSignOut={() => supabase?.auth.signOut()}
+            onSaveCloud={() => void saveToCloud(false)}
+            onLoadCloud={loadFromCloud}
+            onDeleteCloud={deleteCloudChecklist}
+          />
           <Stats total={allItems.length} packed={packedCount} remaining={remainingCount} essential={essentialRemaining} />
           <ProgressPanel categories={state.categories} total={allItems.length} packed={packedCount} progress={progress} />
           <EssentialAlert items={essentialItems} />
@@ -591,6 +798,84 @@ function Stats({ total, packed, remaining, essential }: { total: number; packed:
         ["Essential Remaining", essential],
       ].map(([label, value]) => <div className="stat panel" key={label}><span>{label}</span><strong>{value}</strong></div>)}
     </div>
+  );
+}
+
+function CloudSyncPanel({
+  configured,
+  email,
+  setEmail,
+  url,
+  setUrl,
+  anonKey,
+  setAnonKey,
+  userEmail,
+  status,
+  busy,
+  hasCloudChecklist,
+  onSaveSettings,
+  onSignIn,
+  onSignOut,
+  onSaveCloud,
+  onLoadCloud,
+  onDeleteCloud,
+}: {
+  configured: boolean;
+  email: string;
+  setEmail: (value: string) => void;
+  url: string;
+  setUrl: (value: string) => void;
+  anonKey: string;
+  setAnonKey: (value: string) => void;
+  userEmail: string;
+  status: string;
+  busy: boolean;
+  hasCloudChecklist: boolean;
+  onSaveSettings: () => void;
+  onSignIn: (event: FormEvent) => void;
+  onSignOut: () => void;
+  onSaveCloud: () => void;
+  onLoadCloud: () => void;
+  onDeleteCloud: () => void;
+}) {
+  return (
+    <section className="panel cloud-panel">
+      <div>
+        <span className="section-label">Cloud sync</span>
+        <h2>Save across devices</h2>
+        <p className="muted">Local autosave stays on. Supabase Free adds a server copy so the checklist can be restored on another phone or laptop.</p>
+      </div>
+
+      {!configured && (
+        <details className="cloud-details">
+          <summary>Connect Supabase Free</summary>
+          <div className="cloud-config">
+            <input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="Supabase project URL" />
+            <input value={anonKey} onChange={(event) => setAnonKey(event.target.value)} placeholder="Supabase anon key" />
+            <button onClick={onSaveSettings}>Connect Supabase</button>
+          </div>
+        </details>
+      )}
+
+      {configured && !userEmail && (
+        <form className="cloud-config" onSubmit={onSignIn}>
+          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email for cloud sync" />
+          <button disabled={busy}>Send sign-in link</button>
+        </form>
+      )}
+
+      {configured && userEmail && (
+        <div className="cloud-actions">
+          <p className="cloud-user">Signed in as <strong>{userEmail}</strong></p>
+          <button disabled={busy} onClick={onSaveCloud}>Save now</button>
+          <button disabled={busy} onClick={onLoadCloud}>Load cloud copy</button>
+          <button disabled={busy || !hasCloudChecklist} className="danger" onClick={onDeleteCloud}>Delete cloud copy</button>
+          <button disabled={busy} onClick={onSignOut}>Sign out</button>
+        </div>
+      )}
+
+      <p className="cloud-status">{status}</p>
+    </section>
   );
 }
 

@@ -18,7 +18,9 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at top left, rgba(34, 87, 166, 0.12), transparent 30rem),
+    linear-gradient(180deg, #f8fbff 0, var(--bg) 18rem);
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -83,7 +85,7 @@ textarea {
   background: var(--paper);
   color: var(--ink);
   border: 1px solid var(--line);
-  border-top: 4px solid var(--blue);
+  border-top: 5px solid var(--blue);
   border-radius: 8px;
   padding: clamp(22px, 4vw, 34px);
   box-shadow: var(--shadow);
@@ -119,8 +121,8 @@ textarea {
   margin-top: 16px;
   border-radius: 8px;
   padding: 0 10px;
-  background: #edf7f1;
-  color: #166534;
+  background: linear-gradient(135deg, #e7f8ee, #f4fbf7);
+  color: #146c39;
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -141,8 +143,8 @@ textarea {
   padding: 18px;
   text-align: center;
   background:
-    linear-gradient(90deg, rgba(23, 131, 69, 0.16) var(--pct, 0%), transparent 0),
-    #f8fafc;
+    linear-gradient(90deg, rgba(23, 131, 69, 0.18) var(--pct, 0%), transparent 0),
+    linear-gradient(135deg, #f7fbff, #f8fafc);
   border: 1px solid var(--line);
   color: var(--blue);
 }
@@ -224,6 +226,64 @@ textarea {
   padding: 18px;
 }
 
+.cloud-panel {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.86fr);
+  gap: 18px;
+  border-color: rgba(34, 87, 166, 0.24);
+  background:
+    linear-gradient(135deg, rgba(34, 87, 166, 0.08), rgba(23, 131, 69, 0.06)),
+    #fff;
+}
+
+.cloud-panel h2 {
+  margin-bottom: 8px;
+}
+
+.cloud-config,
+.cloud-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.cloud-details {
+  align-self: start;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(34, 87, 166, 0.16);
+  padding: 12px;
+}
+
+.cloud-details summary {
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.cloud-details .cloud-config {
+  margin-top: 12px;
+}
+
+.cloud-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cloud-user,
+.cloud-status {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.cloud-status {
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .view-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -269,6 +329,7 @@ p {
   min-height: 104px;
   display: grid;
   align-content: center;
+  border-top: 3px solid rgba(34, 87, 166, 0.72);
 }
 
 .stat span,
@@ -325,7 +386,8 @@ p {
 }
 
 .alert {
-  border-color: rgba(200, 16, 46, 0.32);
+  border-color: rgba(180, 35, 53, 0.28);
+  background: linear-gradient(135deg, #fff, #fff8f7);
 }
 
 .alert p {
@@ -500,17 +562,19 @@ p {
 
 .bag-card {
   display: grid;
-  gap: 12px;
-  min-height: 130px;
+  gap: 8px;
+  min-height: 112px;
   text-align: left;
   border: 1px solid var(--line);
-  background: #fff;
+  background: linear-gradient(135deg, #fff, #f8fbff);
   color: var(--ink);
 }
 
 .bag-card.active {
-  background: var(--blue);
+  background: linear-gradient(135deg, var(--blue), #163c78);
   color: #fff;
+  border-color: transparent;
+  box-shadow: 0 14px 30px rgba(34, 87, 166, 0.22);
 }
 
 .mini {
@@ -726,6 +790,15 @@ p {
     gap: 12px;
   }
 
+  .cloud-panel {
+    grid-column: span 1;
+    grid-template-columns: 1fr;
+  }
+
+  .cloud-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
@@ -807,20 +880,24 @@ p {
 
   .row-actions {
     grid-column: 1 / -1;
-    justify-content: flex-start;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 2px;
+    display: grid;
+    grid-template-columns: 34px 34px minmax(118px, 1fr) 46px 54px;
+    gap: 6px;
+    overflow: hidden;
+    padding-bottom: 0;
   }
 
   .row-actions button,
   .row-actions select {
-    width: auto;
-    min-width: max-content;
+    width: 100%;
+    min-width: 0;
     min-height: 36px;
-    flex: 0 0 auto;
-    padding: 0 10px;
-    font-size: 0.78rem;
+    padding: 0 8px;
+    font-size: 0.74rem;
+  }
+
+  .row-actions select[aria-label="Move to category"] {
+    display: none;
   }
 
   .actions-row {
@@ -846,6 +923,23 @@ p {
   .category-head {
     grid-template-columns: auto 1fr auto;
     padding: 12px;
+  }
+
+  .bag-card {
+    min-height: 88px;
+    padding: 16px;
+  }
+
+  .mini {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .mini select {
+    width: 100%;
+    font-size: 0.92rem;
   }
 
   .category-head button:nth-last-child(-n + 2) {

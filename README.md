@@ -27,3 +27,16 @@ Then open the local URL printed by the dev server.
 ```bash
 pnpm run build
 ```
+
+## Optional Free Cloud Sync
+
+This app can sync checklist data with Supabase Free.
+
+1. Create a free Supabase project.
+2. In Supabase SQL Editor, run `supabase/schema.sql`.
+3. In GitHub, add repository secrets:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. Re-run the GitHub Pages workflow.
+
+Without those secrets, the app still works with browser LocalStorage.
