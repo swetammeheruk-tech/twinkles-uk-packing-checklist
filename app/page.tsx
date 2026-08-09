@@ -7,7 +7,7 @@ type Priority = "Essential" | "Important" | "Optional";
 type Bag = "Hand Luggage" | "Checked Bag 1" | "Checked Bag 2" | "Personal Bag" | "Buy in UK";
 type Status = "Not Packed" | "Packed" | "Need to Buy" | "Buy in UK";
 type Source = "Pack from India" | "Buy in UK" | "Undecided";
-type Tab = "overview" | "checklist" | "bags" | "buy" | "travel";
+type Tab = "overview" | "checklist" | "bags" | "buy" | "travel" | "cloud";
 
 type Item = {
   id: string;
@@ -575,7 +575,7 @@ export default function Home() {
           <p className="journey">India to United Kingdom</p>
           <h1>Twinkle’s UK Packing Checklist</h1>
           <p>A practical packing dashboard for documents, luggage, travel checks, and UK setup items.</p>
-          <span className="save-pill">Autosaved on this device</span>
+          <button className="save-pill" onClick={() => setTab("cloud")}>{cloudUser ? "Cloud backup on" : "Autosaved locally"}</button>
         </div>
         <div className="progress-orbit" style={{ "--pct": `${progress}%` } as CSSProperties} aria-label={`Packing Progress: ${progress}%`}>
           <span>{progress}%</span>
@@ -603,23 +603,6 @@ export default function Home() {
             <p>Your checklist is saved automatically in this browser. Keep packing progress, categories, and notes updated here.</p>
             <button className="primary" onClick={() => setTab("checklist")}>Continue Packing</button>
           </div>
-          <CloudSyncPanel
-            configured={Boolean(supabase)}
-            url={cloudUrl}
-            setUrl={setCloudUrl}
-            anonKey={cloudKey}
-            setAnonKey={setCloudKey}
-            cloudUserId={cloudUser?.id ?? ""}
-            status={cloudStatus}
-            busy={cloudBusy}
-            hasCloudChecklist={Boolean(cloudChecklistId)}
-            onSaveSettings={saveCloudSettings}
-            onStartSync={startCloudSync}
-            onSignOut={() => supabase?.auth.signOut()}
-            onSaveCloud={() => void saveToCloud(false)}
-            onLoadCloud={loadFromCloud}
-            onDeleteCloud={deleteCloudChecklist}
-          />
           <Stats total={allItems.length} packed={packedCount} remaining={remainingCount} essential={essentialRemaining} />
           <ProgressPanel categories={state.categories} total={allItems.length} packed={packedCount} progress={progress} />
           <EssentialAlert items={essentialItems} />
@@ -782,6 +765,28 @@ export default function Home() {
               ))}
             </article>
           ))}
+        </section>
+      )}
+
+      {tab === "cloud" && (
+        <section className="stack">
+          <CloudSyncPanel
+            configured={Boolean(supabase)}
+            url={cloudUrl}
+            setUrl={setCloudUrl}
+            anonKey={cloudKey}
+            setAnonKey={setCloudKey}
+            cloudUserId={cloudUser?.id ?? ""}
+            status={cloudStatus}
+            busy={cloudBusy}
+            hasCloudChecklist={Boolean(cloudChecklistId)}
+            onSaveSettings={saveCloudSettings}
+            onStartSync={startCloudSync}
+            onSignOut={() => supabase?.auth.signOut()}
+            onSaveCloud={() => void saveToCloud(false)}
+            onLoadCloud={loadFromCloud}
+            onDeleteCloud={deleteCloudChecklist}
+          />
         </section>
       )}
 
