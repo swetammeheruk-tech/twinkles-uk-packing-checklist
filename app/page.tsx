@@ -354,36 +354,38 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <header className="hero">
+      <header className={`hero ${tab !== "overview" ? "hero-compact" : ""}`}>
         <div>
-          <p className="journey">🇮🇳 ✈️ 🇬🇧 India → United Kingdom</p>
-          <h1>Twinkle’s UK Packing Checklist 🇬🇧</h1>
-          <p>Your UK journey is getting closer. Pack calmly, track clearly, and keep the important things close.</p>
+          <p className="journey">India to United Kingdom</p>
+          <h1>Twinkle’s UK Packing Checklist</h1>
+          <p>A practical packing dashboard for documents, luggage, travel checks, and UK setup items.</p>
+          <span className="save-pill">Autosaved on this device</span>
         </div>
         <div className="progress-orbit" style={{ "--pct": `${progress}%` } as CSSProperties} aria-label={`Packing Progress: ${progress}%`}>
           <span>{progress}%</span>
-          <small>Packing Progress</small>
+          <small>Packing progress</small>
         </div>
       </header>
 
       <nav className="top-tabs" aria-label="Main views">
         {[
-          ["overview", "🏠", "Overview"],
-          ["checklist", "✅", "Checklist"],
-          ["bags", "🧳", "Bags"],
-          ["buy", "🛍", "Buy"],
-          ["travel", "✈️", "Travel"],
+          ["overview", "", "Overview"],
+          ["checklist", "", "Checklist"],
+          ["bags", "", "Bags"],
+          ["buy", "", "Buy"],
+          ["travel", "", "Travel"],
         ].map(([id, icon, label]) => (
-          <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id as Tab)}>{icon} {label}</button>
+          <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id as Tab)}>{icon}{label}</button>
         ))}
       </nav>
 
       {tab === "overview" && (
         <section className="view-grid">
           <div className="hello panel">
-            <h2>Hello Twinkle 👋</h2>
-            <p>Your UK journey is getting closer!</p>
-            <button className="primary" onClick={() => setTab("checklist")}>Continue Packing →</button>
+            <span className="section-label">Trip preparation</span>
+            <h2>Hello Twinkle</h2>
+            <p>Your checklist is saved automatically in this browser. Keep packing progress, categories, and notes updated here.</p>
+            <button className="primary" onClick={() => setTab("checklist")}>Continue Packing</button>
           </div>
           <Stats total={allItems.length} packed={packedCount} remaining={remainingCount} essential={essentialRemaining} />
           <ProgressPanel categories={state.categories} total={allItems.length} packed={packedCount} progress={progress} />
@@ -459,9 +461,9 @@ export default function Home() {
                 </form>
               ) : (
                 <div className="category-actions">
-                  <button onClick={() => setNewItemCategory(cat.id)}>➕ Add item</button>
-                  <button onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>✏️ Rename</button>
-                  <button className="danger" onClick={() => confirm(`Delete ${cat.name}?`) && setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) }))}>🗑 Delete</button>
+                  <button onClick={() => setNewItemCategory(cat.id)}>Add item</button>
+                  <button onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>Rename</button>
+                  <button className="danger" onClick={() => confirm(`Delete ${cat.name}?`) && setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) }))}>Delete</button>
                 </div>
               )}
               {newItemCategory === cat.id && (
@@ -566,11 +568,11 @@ export default function Home() {
 
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {[
-          ["overview", "🏠", "Overview"],
-          ["checklist", "✅", "Checklist"],
-          ["bags", "🧳", "Bags"],
-          ["buy", "🛍", "Buy"],
-          ["travel", "✈️", "Travel"],
+          ["overview", "O", "Overview"],
+          ["checklist", "C", "Checklist"],
+          ["bags", "B", "Bags"],
+          ["buy", "U", "Buy"],
+          ["travel", "T", "Travel"],
         ].map(([id, icon, label]) => (
           <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id as Tab)}><span>{icon}</span>{label}</button>
         ))}
