@@ -1,5 +1,5 @@
 :root {
-  --bg: #f7f9fc;
+  --bg: #f4f7fb;
   --paper: #ffffff;
   --ink: #14213d;
   --muted: #64748b;
@@ -19,10 +19,11 @@
 body {
   margin: 0;
   background:
-    linear-gradient(135deg, rgba(23, 78, 166, 0.08), rgba(200, 16, 46, 0.06)),
+    linear-gradient(135deg, rgba(23, 78, 166, 0.06), rgba(200, 16, 46, 0.04)),
     var(--bg);
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -107,7 +108,8 @@ textarea {
   aspect-ratio: 1;
   border-radius: 50%;
   display: grid;
-  place-content: center;
+  place-items: center;
+  align-content: center;
   text-align: center;
   background: radial-gradient(circle at center, #fff 0 54%, transparent 55%), conic-gradient(#22c55e var(--pct, 68%), rgba(255,255,255,0.28) 0);
   color: var(--ink);
@@ -121,6 +123,9 @@ textarea {
 .progress-orbit small {
   color: var(--muted);
   font-weight: 800;
+  font-size: 0.78rem;
+  line-height: 1.05;
+  max-width: 74px;
 }
 
 .top-tabs,
@@ -183,6 +188,7 @@ p {
   background: var(--red);
   color: #fff;
   width: fit-content;
+  box-shadow: 0 10px 24px rgba(200, 16, 46, 0.2);
 }
 
 .danger {
@@ -550,17 +556,62 @@ p {
 }
 
 @media (max-width: 820px) {
+  body {
+    background: #eef3f8;
+  }
+
   .app-shell {
-    width: min(100% - 20px, 720px);
-    padding-top: 10px;
+    width: min(100% - 24px, 720px);
+    padding-top: 12px;
+    padding-bottom: 92px;
   }
 
   .hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
+    min-height: 0;
+    padding: 18px;
+    background:
+      linear-gradient(135deg, rgba(23, 78, 166, 0.98), rgba(20, 33, 61, 0.96) 62%, rgba(200, 16, 46, 0.82)),
+      #174ea6;
+  }
+
+  .hero h1 {
+    margin: 6px 0 8px;
+    font-size: clamp(1.74rem, 8vw, 2.3rem);
+    line-height: 1.04;
+  }
+
+  .hero p:not(.journey) {
+    font-size: 0.98rem;
+    line-height: 1.4;
+    max-width: 100%;
+  }
+
+  .journey {
+    font-size: 0.86rem;
+    line-height: 1.25;
+    color: rgba(255, 255, 255, 0.86);
   }
 
   .progress-orbit {
-    width: 132px;
+    width: 86px;
+    margin-top: 2px;
+    background: radial-gradient(circle at center, #fff 0 58%, transparent 59%), conic-gradient(#27d36f var(--pct, 68%), rgba(255,255,255,0.26) 0);
+  }
+
+  .progress-orbit span {
+    font-size: 1.42rem;
+    line-height: 1;
+  }
+
+  .progress-orbit small {
+    margin-top: 2px;
+    max-width: 52px;
+    font-size: 0.56rem;
+    line-height: 1.05;
+    letter-spacing: 0;
   }
 
   .top-tabs {
@@ -569,9 +620,62 @@ p {
 
   .view-grid,
   .travel-grid,
-  .stats,
   .bag-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .panel {
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(20, 33, 61, 0.08);
+    border-color: rgba(216, 224, 234, 0.74);
+  }
+
+  .hello {
+    min-height: 0;
+    gap: 8px;
+  }
+
+  .hello h2 {
+    margin-bottom: 4px;
+    font-size: 1.66rem;
+    line-height: 1.12;
+  }
+
+  .hello p {
+    margin-bottom: 12px;
+    color: var(--muted);
+  }
+
+  .primary {
+    min-height: 48px;
+    width: 100%;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
+  .stat {
+    min-height: 86px;
+    padding: 14px;
+  }
+
+  .stat strong {
+    font-size: 1.7rem;
+  }
+
+  .progress-panel h2,
+  .alert h2,
+  .suggestions h2,
+  .hand h2,
+  .weight h2,
+  .category-head h2 {
+    font-size: 1.16rem;
+    line-height: 1.2;
   }
 
   .toolbar {
@@ -581,6 +685,23 @@ p {
 
   .item-row {
     grid-template-columns: auto 1fr;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .check {
+    width: 42px;
+    height: 42px;
+  }
+
+  .item-main strong {
+    font-size: 0.98rem;
+  }
+
+  .item-main span,
+  .item-main small {
+    font-size: 0.78rem;
+    line-height: 1.35;
   }
 
   .row-actions {
@@ -598,6 +719,7 @@ p {
 
   .category-head {
     grid-template-columns: auto 1fr auto;
+    padding: 12px;
   }
 
   .category-head button:nth-last-child(-n + 2) {
@@ -622,37 +744,75 @@ p {
 
   .mobile-nav {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 12px;
+    right: 12px;
+    bottom: max(10px, env(safe-area-inset-bottom));
     z-index: 10;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 0;
-    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0.96);
-    border-top: 1px solid var(--line);
-    box-shadow: 0 -10px 28px rgba(20, 33, 61, 0.12);
+    gap: 4px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(216, 224, 234, 0.86);
+    border-radius: 8px;
+    box-shadow: 0 12px 34px rgba(20, 33, 61, 0.16);
+    backdrop-filter: blur(16px);
   }
 
   .mobile-nav button {
-    min-height: 52px;
-    padding: 4px;
+    min-height: 48px;
+    padding: 4px 2px;
+    border-radius: 8px;
     border: 0;
     background: transparent;
-    font-size: 0.74rem;
+    font-size: 0.68rem;
+    line-height: 1.05;
     display: grid;
     place-items: center;
     color: var(--muted);
   }
 
   .mobile-nav button span {
-    font-size: 1.2rem;
+    font-size: 1.06rem;
+    line-height: 1;
   }
 
   .mobile-nav button.active {
     background: var(--blue-2);
     color: var(--blue);
+    box-shadow: inset 0 0 0 1px rgba(23, 78, 166, 0.06);
+  }
+}
+
+@media (max-width: 430px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-orbit {
+    width: 100%;
+    aspect-ratio: auto;
+    min-height: 64px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background:
+      linear-gradient(90deg, rgba(39, 211, 111, 0.32) var(--pct, 0%), rgba(255, 255, 255, 0.12) 0),
+      rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .progress-orbit span {
+    font-size: 1.9rem;
+    color: #fff;
+  }
+
+  .progress-orbit small {
+    max-width: none;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.78);
   }
 }
 
