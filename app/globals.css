@@ -249,13 +249,17 @@ button.save-pill {
 }
 
 .top-tabs {
-  margin: 18px 0;
+  margin: 18px 0 0;
   flex-wrap: wrap;
   padding: 5px;
   border: 1px solid rgba(220, 228, 238, 0.86);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.7);
   width: fit-content;
+}
+
+.tab-content {
+  margin-top: 18px;
 }
 
 .top-tabs button,
@@ -289,7 +293,7 @@ button.save-pill {
 
 .stack {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .hello {
@@ -730,7 +734,7 @@ button.save-pill {
 .manage-panel {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
+  gap: 9px;
   align-items: stretch;
   padding: 7px;
   background:
@@ -1155,7 +1159,7 @@ button.save-pill {
 .bag-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
 
 .bag-card {
@@ -1667,17 +1671,21 @@ button.save-pill {
     display: none;
   }
 
+  .tab-content {
+    margin-top: 14px;
+  }
+
   .view-grid,
   .travel-grid,
   .cloud-panel,
   .ai-panel {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 14px;
   }
 
   .bag-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    gap: 10px;
   }
 
   .stats {
@@ -1881,7 +1889,7 @@ button.save-pill {
 
   .manage-panel {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    gap: 8px;
     padding: 6px;
   }
 
@@ -2141,7 +2149,7 @@ button.save-pill {
 
   .travel-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 14px;
   }
 
   .travel-list-head {

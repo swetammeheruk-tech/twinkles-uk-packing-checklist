@@ -868,255 +868,257 @@ export default function Home() {
         ))}
       </nav>
 
-      {tab === "overview" && (
-        <section className="view-grid">
-          <div className="hello panel">
-            <span className="section-label">Trip preparation</span>
-            <h2>Hello Twinkle</h2>
-            <p>Start with essentials, keep luggage organised, and check off each item as it is ready.</p>
-            <button className="primary" onClick={() => setTab("checklist")}>Continue Packing</button>
-          </div>
-          <PackingAssistant
-            items={allItems}
-            categories={state.categories}
-            packed={packedCount}
-            remaining={remainingCount}
-            urgent={urgentRemaining}
-            urgentLabel={urgentPriority}
-            progress={progress}
-            handReady={handReady}
-            handTotal={handCore.length}
-            onOpenChecklist={() => setTab("checklist")}
-          />
-          <Stats total={allItems.length} packed={packedCount} remaining={remainingCount} urgent={urgentRemaining} urgentLabel={urgentPriority} />
-          <ProgressPanel categories={state.categories} total={allItems.length} packed={packedCount} progress={progress} />
-          <EssentialAlert items={urgentItems} priority={urgentPriority} />
-          <SuggestionPanel
-            suggestions={suggestions}
-            dismiss={(idea) => requestConfirm(`Dismiss this suggestion: "${idea}"?`, () => setState((s) => ({ ...s, dismissedSuggestions: [...s.dismissedSuggestions, idea] })), { actionLabel: "Dismiss" })}
-          />
-        </section>
-      )}
-
-      {tab === "checklist" && (
-        <section className="stack">
-          <div className="toolbar panel">
-            <input aria-label="Search packing items" placeholder="🔍 Search packing items..." value={query} onChange={(e) => setQuery(e.target.value)} />
-            {searchTerm && <SearchResultPanel query={query} results={searchResults} />}
-          </div>
-
-          <div className="manage-panel panel">
-            <button className="manage-action primary-action" onClick={() => setAddingItem(true)}>
-              <span className="manage-icon" aria-hidden="true">+</span>
-              <span><small>Item</small><strong>Add item</strong></span>
-            </button>
-            <button className="manage-action" onClick={() => setAddingCategory(true)}>
-              <span className="manage-icon" aria-hidden="true">#</span>
-              <span><small>Category</small><strong>Add category</strong></span>
-            </button>
-            <button className="manage-action" onClick={() => setManagingPriorities(true)}>
-              <span className="manage-icon" aria-hidden="true">!</span>
-              <span><small>Priority</small><strong>Manage labels</strong></span>
-            </button>
-            <input ref={importRef} type="file" accept="application/json" hidden onChange={importBackup} />
-          </div>
-
-          <ModeStrip label="Checklist" active={checklistEditMode} onToggle={toggleChecklistEditMode} />
-
-          {filteredCategories.map((cat, catIndex) => (
-            <article className={`category panel ${checklistEditMode ? "editing-mode" : ""}`} key={cat.id}>
-              <div className="category-head">
-                <button className="collapse" onClick={() => updateCategory(cat.id, (c) => ({ ...c, collapsed: !c.collapsed }))}>{cat.collapsed ? "＋" : "−"}</button>
-                <h2>{cat.icon} {cat.name}</h2>
-                <span>{cat.items.filter((item) => item.status === "Packed").length}/{cat.items.length}</span>
-                {checklistEditMode && (
-                  <>
-                    <button className="move-button" title="Move category up" disabled={catIndex === 0} onClick={() => requestConfirm(`Move "${cat.name}" up?`, () => setState((s) => {
-                      const next = [...s.categories];
-                      const realIndex = next.findIndex((c) => c.id === cat.id);
-                      if (realIndex > 0) [next[realIndex - 1], next[realIndex]] = [next[realIndex], next[realIndex - 1]];
-                      return { ...s, categories: next };
-                    }), { actionLabel: "Move" })}>↑</button>
-                    <button className="move-button" title="Move category down" disabled={catIndex === filteredCategories.length - 1} onClick={() => requestConfirm(`Move "${cat.name}" down?`, () => setState((s) => {
-                      const next = [...s.categories];
-                      const realIndex = next.findIndex((c) => c.id === cat.id);
-                      if (realIndex < next.length - 1) [next[realIndex + 1], next[realIndex]] = [next[realIndex], next[realIndex + 1]];
-                      return { ...s, categories: next };
-                    }), { actionLabel: "Move" })}>↓</button>
-                    <button type="button" className="icon-button" aria-label={`Rename ${cat.name}`} title="Rename category" onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>✎</button>
-                    <button type="button" className="icon-button danger-icon" aria-label={`Delete ${cat.name}`} title="Delete category" onClick={() => requestConfirm(`Delete "${cat.name}" and all items inside it?`, () => setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) })), { title: "Delete category", actionLabel: "Delete", tone: "danger" })}>🗑</button>
-                  </>
-                )}
-              </div>
-              {checklistEditMode && renamingCategory === cat.id && (
-                <form className="inline-form" onSubmit={(e) => {
-                  e.preventDefault();
-                  const nextName = renameValue.trim() || cat.name;
-                  requestConfirm(`Rename "${cat.name}" to "${nextName}"?`, () => {
-                    updateCategory(cat.id, (c) => ({ ...c, name: nextName }));
-                    setRenamingCategory(null);
-                  }, { actionLabel: "Rename" });
-                }}>
-                  <input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} />
-                  <button>Save</button>
-                </form>
-              )}
-              {!cat.collapsed && (
-                <div className="item-list">
-                  {cat.items.map((item, itemIndex) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      categories={state.categories}
-                      onToggle={() => requestConfirm(`Mark "${item.name}" as ${item.status === "Packed" ? "not packed" : "packed"}?`, () => updateItem(cat.id, item.id, { status: item.status === "Packed" ? "Not Packed" : "Packed" }), { actionLabel: "Update" })}
-                      onEdit={() => setEditing({ item, categoryId: cat.id })}
-                      onDelete={() => requestConfirm(`Delete "${item.name}"?`, () => updateCategory(cat.id, (c) => ({ ...c, items: c.items.filter((x) => x.id !== item.id) })), { title: "Delete item", actionLabel: "Delete", tone: "danger" })}
-                      onMoveCategory={(target) => requestConfirm(`Move "${item.name}" to another category?`, () => moveItem(cat.id, item.id, target), { actionLabel: "Move" })}
-                      onMoveBag={(bag) => requestConfirm(`Move "${item.name}" to ${bag}?`, () => updateItem(cat.id, item.id, { bag }), { actionLabel: "Move" })}
-                      editMode={checklistEditMode}
-                      onReorder={(direction) => requestConfirm(`Move "${item.name}" ${direction < 0 ? "up" : "down"}?`, () => updateCategory(cat.id, (c) => {
-                        const next = [...c.items];
-                        const target = itemIndex + direction;
-                        if (target >= 0 && target < next.length) [next[itemIndex], next[target]] = [next[target], next[itemIndex]];
-                        return { ...c, items: next };
-                      }), { actionLabel: "Move" })}
-                    />
-                  ))}
-                </div>
-              )}
-            </article>
-          ))}
-
-          <div className="bottom-tools panel">
-            <div>
-              <span className="section-label">Backup</span>
-              <h2>Checklist tools</h2>
+      <div className="tab-content">
+        {tab === "overview" && (
+          <section className="view-grid">
+            <div className="hello panel">
+              <span className="section-label">Trip preparation</span>
+              <h2>Hello Twinkle</h2>
+              <p>Start with essentials, keep luggage organised, and check off each item as it is ready.</p>
+              <button className="primary" onClick={() => setTab("checklist")}>Continue Packing</button>
             </div>
-            <div className="backup-actions">
-              <button onClick={exportBackup}>Export Backup</button>
-              <button onClick={() => importRef.current?.click()}>Import Backup</button>
-              <button onClick={copyChecklist}>Share Checklist</button>
-              <button onClick={() => window.print()}>Print</button>
-              <button className="danger" onClick={resetAll}>Reset Checklist</button>
+            <PackingAssistant
+              items={allItems}
+              categories={state.categories}
+              packed={packedCount}
+              remaining={remainingCount}
+              urgent={urgentRemaining}
+              urgentLabel={urgentPriority}
+              progress={progress}
+              handReady={handReady}
+              handTotal={handCore.length}
+              onOpenChecklist={() => setTab("checklist")}
+            />
+            <Stats total={allItems.length} packed={packedCount} remaining={remainingCount} urgent={urgentRemaining} urgentLabel={urgentPriority} />
+            <ProgressPanel categories={state.categories} total={allItems.length} packed={packedCount} progress={progress} />
+            <EssentialAlert items={urgentItems} priority={urgentPriority} />
+            <SuggestionPanel
+              suggestions={suggestions}
+              dismiss={(idea) => requestConfirm(`Dismiss this suggestion: "${idea}"?`, () => setState((s) => ({ ...s, dismissedSuggestions: [...s.dismissedSuggestions, idea] })), { actionLabel: "Dismiss" })}
+            />
+          </section>
+        )}
+
+        {tab === "checklist" && (
+          <section className="stack">
+            <div className="toolbar panel">
+              <input aria-label="Search packing items" placeholder="🔍 Search packing items..." value={query} onChange={(e) => setQuery(e.target.value)} />
+              {searchTerm && <SearchResultPanel query={query} results={searchResults} />}
             </div>
-          </div>
-        </section>
-      )}
 
-      {tab === "bags" && (
-        <section className="stack bags-view">
-          <div className="bag-grid">
-            {bags.map((bag) => {
-              const items = allItems.filter((item) => item.bag === bag);
-              const weight = state.weights[bag];
-              const weightPct = weight ? Math.min(100, Math.round((weight.current / weight.allowance) * 100)) : 0;
-              return (
-                <button key={bag} className={`bag-card ${selectedBag === bag ? "active" : ""}`} onClick={() => setSelectedBag(bag)}>
-                  <strong>{bagIcon(bag)} {bag}</strong>
-                  <span>{items.length} items</span>
-                  <i className="bag-meter" aria-hidden="true"><em style={{ width: `${weightPct}%` }} /></i>
-                </button>
-              );
-            })}
-          </div>
-          <SelectedBagPanel
-            bag={selectedBag}
-            items={allItems.filter((item) => item.bag === selectedBag)}
-            weight={state.weights[selectedBag]}
-            onWeightChange={(weight) => requestConfirm(`Update ${selectedBag} weight details?`, () => {
-              setState((current) => ({ ...current, weights: { ...current.weights, [selectedBag]: weight } }));
-            }, { actionLabel: "Update" })}
-          />
-        </section>
-      )}
+            <div className="manage-panel panel">
+              <button className="manage-action primary-action" onClick={() => setAddingItem(true)}>
+                <span className="manage-icon" aria-hidden="true">+</span>
+                <span><small>Item</small><strong>Add item</strong></span>
+              </button>
+              <button className="manage-action" onClick={() => setAddingCategory(true)}>
+                <span className="manage-icon" aria-hidden="true">#</span>
+                <span><small>Category</small><strong>Add category</strong></span>
+              </button>
+              <button className="manage-action" onClick={() => setManagingPriorities(true)}>
+                <span className="manage-icon" aria-hidden="true">!</span>
+                <span><small>Priority</small><strong>Manage labels</strong></span>
+              </button>
+              <input ref={importRef} type="file" accept="application/json" hidden onChange={importBackup} />
+            </div>
 
-      {tab === "travel" && (
-        <section className="stack">
-          <ModeStrip label="Travel" active={travelEditMode} onToggle={toggleTravelEditMode} />
+            <ModeStrip label="Checklist" active={checklistEditMode} onToggle={toggleChecklistEditMode} />
 
-          <section className="travel-grid">
-            {state.travelLists.map((list) => (
-              <article className={`panel travel-list ${travelEditMode ? "editing-mode" : ""}`} key={list.id}>
-                <div className="travel-list-head">
-                  {travelEditMode && renamingTravelList === list.id ? (
-                    <form className="inline-form travel-rename" onSubmit={(event) => {
-                      event.preventDefault();
-                      renameTravelListSubmit(list, travelRenameValue);
-                    }}>
-                      <input value={travelRenameValue} onChange={(event) => setTravelRenameValue(event.target.value)} />
-                      <button>Save</button>
-                    </form>
-                  ) : (
+            {filteredCategories.map((cat, catIndex) => (
+              <article className={`category panel ${checklistEditMode ? "editing-mode" : ""}`} key={cat.id}>
+                <div className="category-head">
+                  <button className="collapse" onClick={() => updateCategory(cat.id, (c) => ({ ...c, collapsed: !c.collapsed }))}>{cat.collapsed ? "＋" : "−"}</button>
+                  <h2>{cat.icon} {cat.name}</h2>
+                  <span>{cat.items.filter((item) => item.status === "Packed").length}/{cat.items.length}</span>
+                  {checklistEditMode && (
                     <>
-                      <div>
-                        <h2>{list.icon} {list.title}</h2>
-                        <p className="muted">{list.items.filter((item) => item.done).length} / {list.items.length} ready</p>
-                      </div>
-                      {travelEditMode && (
-                        <div className="icon-actions">
-                          <button type="button" className="icon-button" aria-label={`Rename ${list.title}`} title="Rename" onClick={() => { setRenamingTravelList(list.id); setTravelRenameValue(list.title); }}>✎</button>
-                          <button type="button" className="icon-button danger-icon" aria-label={`Delete ${list.title}`} title="Delete" onClick={() => deleteTravelList(list)}>🗑</button>
-                        </div>
-                      )}
+                      <button className="move-button" title="Move category up" disabled={catIndex === 0} onClick={() => requestConfirm(`Move "${cat.name}" up?`, () => setState((s) => {
+                        const next = [...s.categories];
+                        const realIndex = next.findIndex((c) => c.id === cat.id);
+                        if (realIndex > 0) [next[realIndex - 1], next[realIndex]] = [next[realIndex], next[realIndex - 1]];
+                        return { ...s, categories: next };
+                      }), { actionLabel: "Move" })}>↑</button>
+                      <button className="move-button" title="Move category down" disabled={catIndex === filteredCategories.length - 1} onClick={() => requestConfirm(`Move "${cat.name}" down?`, () => setState((s) => {
+                        const next = [...s.categories];
+                        const realIndex = next.findIndex((c) => c.id === cat.id);
+                        if (realIndex < next.length - 1) [next[realIndex + 1], next[realIndex]] = [next[realIndex], next[realIndex + 1]];
+                        return { ...s, categories: next };
+                      }), { actionLabel: "Move" })}>↓</button>
+                      <button type="button" className="icon-button" aria-label={`Rename ${cat.name}`} title="Rename category" onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>✎</button>
+                      <button type="button" className="icon-button danger-icon" aria-label={`Delete ${cat.name}`} title="Delete category" onClick={() => requestConfirm(`Delete "${cat.name}" and all items inside it?`, () => setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) })), { title: "Delete category", actionLabel: "Delete", tone: "danger" })}>🗑</button>
                     </>
                   )}
                 </div>
-                {list.items.map((item) => (
-                  <div className={`travel-item ${item.done ? "done" : ""}`} key={item.id}>
-                    {travelEditMode && renamingTravelItem?.listId === list.id && renamingTravelItem.itemId === item.id ? (
+                {checklistEditMode && renamingCategory === cat.id && (
+                  <form className="inline-form" onSubmit={(e) => {
+                    e.preventDefault();
+                    const nextName = renameValue.trim() || cat.name;
+                    requestConfirm(`Rename "${cat.name}" to "${nextName}"?`, () => {
+                      updateCategory(cat.id, (c) => ({ ...c, name: nextName }));
+                      setRenamingCategory(null);
+                    }, { actionLabel: "Rename" });
+                  }}>
+                    <input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} />
+                    <button>Save</button>
+                  </form>
+                )}
+                {!cat.collapsed && (
+                  <div className="item-list">
+                    {cat.items.map((item, itemIndex) => (
+                      <ItemRow
+                        key={item.id}
+                        item={item}
+                        categories={state.categories}
+                        onToggle={() => requestConfirm(`Mark "${item.name}" as ${item.status === "Packed" ? "not packed" : "packed"}?`, () => updateItem(cat.id, item.id, { status: item.status === "Packed" ? "Not Packed" : "Packed" }), { actionLabel: "Update" })}
+                        onEdit={() => setEditing({ item, categoryId: cat.id })}
+                        onDelete={() => requestConfirm(`Delete "${item.name}"?`, () => updateCategory(cat.id, (c) => ({ ...c, items: c.items.filter((x) => x.id !== item.id) })), { title: "Delete item", actionLabel: "Delete", tone: "danger" })}
+                        onMoveCategory={(target) => requestConfirm(`Move "${item.name}" to another category?`, () => moveItem(cat.id, item.id, target), { actionLabel: "Move" })}
+                        onMoveBag={(bag) => requestConfirm(`Move "${item.name}" to ${bag}?`, () => updateItem(cat.id, item.id, { bag }), { actionLabel: "Move" })}
+                        editMode={checklistEditMode}
+                        onReorder={(direction) => requestConfirm(`Move "${item.name}" ${direction < 0 ? "up" : "down"}?`, () => updateCategory(cat.id, (c) => {
+                          const next = [...c.items];
+                          const target = itemIndex + direction;
+                          if (target >= 0 && target < next.length) [next[itemIndex], next[target]] = [next[target], next[itemIndex]];
+                          return { ...c, items: next };
+                        }), { actionLabel: "Move" })}
+                      />
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+
+            <div className="bottom-tools panel">
+              <div>
+                <span className="section-label">Backup</span>
+                <h2>Checklist tools</h2>
+              </div>
+              <div className="backup-actions">
+                <button onClick={exportBackup}>Export Backup</button>
+                <button onClick={() => importRef.current?.click()}>Import Backup</button>
+                <button onClick={copyChecklist}>Share Checklist</button>
+                <button onClick={() => window.print()}>Print</button>
+                <button className="danger" onClick={resetAll}>Reset Checklist</button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {tab === "bags" && (
+          <section className="stack bags-view">
+            <div className="bag-grid">
+              {bags.map((bag) => {
+                const items = allItems.filter((item) => item.bag === bag);
+                const weight = state.weights[bag];
+                const weightPct = weight ? Math.min(100, Math.round((weight.current / weight.allowance) * 100)) : 0;
+                return (
+                  <button key={bag} className={`bag-card ${selectedBag === bag ? "active" : ""}`} onClick={() => setSelectedBag(bag)}>
+                    <strong>{bagIcon(bag)} {bag}</strong>
+                    <span>{items.length} items</span>
+                    <i className="bag-meter" aria-hidden="true"><em style={{ width: `${weightPct}%` }} /></i>
+                  </button>
+                );
+              })}
+            </div>
+            <SelectedBagPanel
+              bag={selectedBag}
+              items={allItems.filter((item) => item.bag === selectedBag)}
+              weight={state.weights[selectedBag]}
+              onWeightChange={(weight) => requestConfirm(`Update ${selectedBag} weight details?`, () => {
+                setState((current) => ({ ...current, weights: { ...current.weights, [selectedBag]: weight } }));
+              }, { actionLabel: "Update" })}
+            />
+          </section>
+        )}
+
+        {tab === "travel" && (
+          <section className="stack">
+            <ModeStrip label="Travel" active={travelEditMode} onToggle={toggleTravelEditMode} />
+
+            <section className="travel-grid">
+              {state.travelLists.map((list) => (
+                <article className={`panel travel-list ${travelEditMode ? "editing-mode" : ""}`} key={list.id}>
+                  <div className="travel-list-head">
+                    {travelEditMode && renamingTravelList === list.id ? (
                       <form className="inline-form travel-rename" onSubmit={(event) => {
                         event.preventDefault();
-                        renameTravelItemSubmit(list.id, item, travelRenameValue);
+                        renameTravelListSubmit(list, travelRenameValue);
                       }}>
                         <input value={travelRenameValue} onChange={(event) => setTravelRenameValue(event.target.value)} />
                         <button>Save</button>
                       </form>
                     ) : (
                       <>
-                        <label className="travel-check">
-                          <input type="checkbox" checked={item.done} onChange={() => requestConfirm(`Mark "${item.name}" as ${item.done ? "not ready" : "ready"}?`, () => setState((s) => ({ ...s, travelLists: s.travelLists.map((tl) => tl.id === list.id ? { ...tl, items: tl.items.map((x) => x.id === item.id ? { ...x, done: !x.done } : x) } : tl) })), { actionLabel: "Update" })} />
-                          <span>{item.name}</span>
-                        </label>
+                        <div>
+                          <h2>{list.icon} {list.title}</h2>
+                          <p className="muted">{list.items.filter((item) => item.done).length} / {list.items.length} ready</p>
+                        </div>
                         {travelEditMode && (
-                          <div className="travel-item-actions">
-                            <button type="button" className="icon-button" aria-label={`Rename ${item.name}`} title="Rename" onClick={() => { setRenamingTravelItem({ listId: list.id, itemId: item.id }); setTravelRenameValue(item.name); }}>✎</button>
-                            <button type="button" className="icon-button danger-icon" aria-label={`Delete ${item.name}`} title="Delete" onClick={() => deleteTravelItem(list.id, item)}>🗑</button>
+                          <div className="icon-actions">
+                            <button type="button" className="icon-button" aria-label={`Rename ${list.title}`} title="Rename" onClick={() => { setRenamingTravelList(list.id); setTravelRenameValue(list.title); }}>✎</button>
+                            <button type="button" className="icon-button danger-icon" aria-label={`Delete ${list.title}`} title="Delete" onClick={() => deleteTravelList(list)}>🗑</button>
                           </div>
                         )}
                       </>
                     )}
                   </div>
-                ))}
-              </article>
-            ))}
+                  {list.items.map((item) => (
+                    <div className={`travel-item ${item.done ? "done" : ""}`} key={item.id}>
+                      {travelEditMode && renamingTravelItem?.listId === list.id && renamingTravelItem.itemId === item.id ? (
+                        <form className="inline-form travel-rename" onSubmit={(event) => {
+                          event.preventDefault();
+                          renameTravelItemSubmit(list.id, item, travelRenameValue);
+                        }}>
+                          <input value={travelRenameValue} onChange={(event) => setTravelRenameValue(event.target.value)} />
+                          <button>Save</button>
+                        </form>
+                      ) : (
+                        <>
+                          <label className="travel-check">
+                            <input type="checkbox" checked={item.done} onChange={() => requestConfirm(`Mark "${item.name}" as ${item.done ? "not ready" : "ready"}?`, () => setState((s) => ({ ...s, travelLists: s.travelLists.map((tl) => tl.id === list.id ? { ...tl, items: tl.items.map((x) => x.id === item.id ? { ...x, done: !x.done } : x) } : tl) })), { actionLabel: "Update" })} />
+                            <span>{item.name}</span>
+                          </label>
+                          {travelEditMode && (
+                            <div className="travel-item-actions">
+                              <button type="button" className="icon-button" aria-label={`Rename ${item.name}`} title="Rename" onClick={() => { setRenamingTravelItem({ listId: list.id, itemId: item.id }); setTravelRenameValue(item.name); }}>✎</button>
+                              <button type="button" className="icon-button danger-icon" aria-label={`Delete ${item.name}`} title="Delete" onClick={() => deleteTravelItem(list.id, item)}>🗑</button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </article>
+              ))}
+            </section>
           </section>
-        </section>
-      )}
+        )}
 
-      {tab === "cloud" && (
-        <section className="stack">
-          <CloudSyncPanel
-            configured={Boolean(supabase)}
-            url={cloudUrl}
-            setUrl={setCloudUrl}
-            anonKey={cloudKey}
-            setAnonKey={setCloudKey}
-            cloudUserId={cloudUser?.id ?? ""}
-            status={cloudStatus}
-            busy={cloudBusy}
-            hasCloudChecklist={Boolean(cloudChecklistId)}
-            onSaveSettings={saveCloudSettings}
-            onStartSync={startCloudSync}
-            onSignOut={() => supabase?.auth.signOut()}
-            onSaveCloud={() => void saveToCloud(false)}
-            onLoadCloud={() => requestConfirm("Load the cloud copy and replace this browser’s current checklist?", loadFromCloud, {
-              title: "Load cloud copy",
-              actionLabel: "Load",
-            })}
-            onDeleteCloud={deleteCloudChecklist}
-          />
-        </section>
-      )}
+        {tab === "cloud" && (
+          <section className="stack">
+            <CloudSyncPanel
+              configured={Boolean(supabase)}
+              url={cloudUrl}
+              setUrl={setCloudUrl}
+              anonKey={cloudKey}
+              setAnonKey={setCloudKey}
+              cloudUserId={cloudUser?.id ?? ""}
+              status={cloudStatus}
+              busy={cloudBusy}
+              hasCloudChecklist={Boolean(cloudChecklistId)}
+              onSaveSettings={saveCloudSettings}
+              onStartSync={startCloudSync}
+              onSignOut={() => supabase?.auth.signOut()}
+              onSaveCloud={() => void saveToCloud(false)}
+              onLoadCloud={() => requestConfirm("Load the cloud copy and replace this browser’s current checklist?", loadFromCloud, {
+                title: "Load cloud copy",
+                actionLabel: "Load",
+              })}
+              onDeleteCloud={deleteCloudChecklist}
+            />
+          </section>
+        )}
+      </div>
 
       {editing && (
         <EditSheet
