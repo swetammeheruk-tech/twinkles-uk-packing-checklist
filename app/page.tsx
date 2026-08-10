@@ -304,6 +304,9 @@ export default function Home() {
   const [bagFilter, setBagFilter] = useState("All Bags");
   const [selectedBag, setSelectedBag] = useState<Bag>("Hand Luggage");
   const [editing, setEditing] = useState<{ item: Item; categoryId: string } | null>(null);
+  const [addingItem, setAddingItem] = useState(false);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [managingPriorities, setManagingPriorities] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemCategoryId, setNewItemCategoryId] = useState("");
   const [newItemPriority, setNewItemPriority] = useState(defaultPriorities[1]);
@@ -493,7 +496,20 @@ export default function Home() {
     requestConfirm(`Add "${itemName}" to ${targetCategory.name}?`, () => {
       updateCategory(targetCategory.id, (cat) => ({ ...cat, items: [...cat.items, defaultItem(itemName, priority, bag)] }));
       setNewItemName("");
+      setAddingItem(false);
     }, { actionLabel: "Add item" });
+  };
+
+  const addCategorySubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const categoryName = String(form.get("categoryName") ?? newCategoryName).trim();
+    if (!categoryName) return;
+    requestConfirm(`Add new category "${categoryName}"?`, () => {
+      setState((s) => ({ ...s, categories: [...s.categories, category(categoryName, "📦", [])] }));
+      setNewCategoryName("");
+      setAddingCategory(false);
+    }, { actionLabel: "Add category" });
   };
 
   const addPriority = (event: FormEvent<HTMLFormElement>) => {
@@ -913,68 +929,27 @@ export default function Home() {
           </div>
 
           <div className="manage-panel panel">
-            <form className="manage-form add-category-form" onSubmit={(e) => {
-              e.preventDefault();
-              const form = new FormData(e.currentTarget);
-              const categoryName = String(form.get("categoryName") ?? newCategoryName).trim();
-              if (!categoryName) return;
-              requestConfirm(`Add new category "${categoryName}"?`, () => {
-                setState((s) => ({ ...s, categories: [...s.categories, category(categoryName, "📦", [])] }));
-                setNewCategoryName("");
-              }, { actionLabel: "Add category" });
-            }}>
-              <span className="section-label">Category</span>
-              <input name="categoryName" placeholder="New category name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} />
-              <button>Add Category</button>
-            </form>
-
-            <form className="manage-form add-item-form" onSubmit={addTopItem}>
-              <span className="section-label">Item</span>
-              <input name="itemName" placeholder="New item name" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
-              <select name="categoryId" value={selectedNewItemCategoryId} onChange={(e) => setNewItemCategoryId(e.target.value)} aria-label="Category for new item">
-                {state.categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-              </select>
-              <select name="priority" value={selectedNewItemPriority} onChange={(e) => setNewItemPriority(e.target.value)} aria-label="Priority for new item">
-                {state.priorities.map((priority) => <option key={priority}>{priority}</option>)}
-              </select>
-              <select name="bag" value={newItemBag} onChange={(e) => setNewItemBag(e.target.value as Bag)} aria-label="Bag for new item">
-                {bags.map((bag) => <option key={bag}>{bag}</option>)}
-              </select>
-              <button>Add Item</button>
-            </form>
-
-            <section className="priority-manager" aria-label="Priority settings">
-              <div className="manager-title">
-                <span className="section-label">Priority labels</span>
-                <form onSubmit={addPriority}>
-                  <input name="priorityName" placeholder="Add priority" value={newPriorityName} onChange={(e) => setNewPriorityName(e.target.value)} />
-                  <button>Add</button>
-                </form>
+            <div className="manage-card">
+              <div>
+                <span className="section-label">Item</span>
+                <strong>Add a packing item</strong>
               </div>
-              <div className="priority-list">
-                {state.priorities.map((priority) => (
-                  <div className="priority-chip" key={priority}>
-                    {renamingPriority === priority ? (
-                      <form className="chip-edit" onSubmit={(event) => {
-                        event.preventDefault();
-                        renamePriority(priority, renamePriorityValue);
-                      }}>
-                        <input value={renamePriorityValue} onChange={(event) => setRenamePriorityValue(event.target.value)} />
-                        <button>Save</button>
-                      </form>
-                    ) : (
-                      <>
-                        <span><PriorityDot priority={priority} /> {priority}</span>
-                        <div className="icon-actions">
-                          <button type="button" className="icon-button" aria-label={`Rename ${priority}`} title="Rename" onClick={() => { setRenamingPriority(priority); setRenamePriorityValue(priority); }}>✎</button>
-                          <button type="button" className="icon-button danger-icon" aria-label={`Delete ${priority}`} title="Delete" onClick={() => deletePriority(priority)}>🗑</button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
+              <button className="primary" onClick={() => setAddingItem(true)}>Add Item</button>
+            </div>
+            <div className="manage-card">
+              <div>
+                <span className="section-label">Category</span>
+                <strong>{state.categories.length} categories</strong>
               </div>
-            </section>
+              <button onClick={() => setAddingCategory(true)}>Add Category</button>
+            </div>
+            <div className="manage-card">
+              <div>
+                <span className="section-label">Priority</span>
+                <strong>{state.priorities.join(" / ")}</strong>
+              </div>
+              <button onClick={() => setManagingPriorities(true)}>Manage</button>
+            </div>
             <input ref={importRef} type="file" accept="application/json" hidden onChange={importBackup} />
           </div>
 
@@ -1189,6 +1164,48 @@ export default function Home() {
               setEditing(null);
             }, { actionLabel: "Save" });
           }}
+        />
+      )}
+
+      {addingItem && (
+        <AddItemSheet
+          categories={state.categories}
+          priorities={state.priorities}
+          name={newItemName}
+          categoryId={selectedNewItemCategoryId}
+          priority={selectedNewItemPriority}
+          bag={newItemBag}
+          setName={setNewItemName}
+          setCategoryId={setNewItemCategoryId}
+          setPriority={setNewItemPriority}
+          setBag={setNewItemBag}
+          onClose={() => setAddingItem(false)}
+          onSubmit={addTopItem}
+        />
+      )}
+
+      {addingCategory && (
+        <AddCategorySheet
+          name={newCategoryName}
+          setName={setNewCategoryName}
+          onClose={() => setAddingCategory(false)}
+          onSubmit={addCategorySubmit}
+        />
+      )}
+
+      {managingPriorities && (
+        <PrioritySheet
+          priorities={state.priorities}
+          newPriorityName={newPriorityName}
+          setNewPriorityName={setNewPriorityName}
+          renamingPriority={renamingPriority}
+          setRenamingPriority={setRenamingPriority}
+          renamePriorityValue={renamePriorityValue}
+          setRenamePriorityValue={setRenamePriorityValue}
+          addPriority={addPriority}
+          renamePriority={renamePriority}
+          deletePriority={deletePriority}
+          onClose={() => setManagingPriorities(false)}
         />
       )}
 
@@ -1492,6 +1509,130 @@ function ItemRow({ item, categories, onToggle, onEdit, onDelete, onMoveCategory,
         <button onClick={onEdit}>Edit</button>
         <button className="danger" onClick={onDelete}>Delete</button>
       </div>
+    </div>
+  );
+}
+
+function AddItemSheet({
+  categories,
+  priorities,
+  name,
+  categoryId,
+  priority,
+  bag,
+  setName,
+  setCategoryId,
+  setPriority,
+  setBag,
+  onClose,
+  onSubmit,
+}: {
+  categories: Category[];
+  priorities: Priority[];
+  name: string;
+  categoryId: string;
+  priority: Priority;
+  bag: Bag;
+  setName: (value: string) => void;
+  setCategoryId: (value: string) => void;
+  setPriority: (value: string) => void;
+  setBag: (value: Bag) => void;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Add packing item">
+      <form className="sheet compact-sheet" onSubmit={onSubmit}>
+        <div className="sheet-head"><h2>Add Item</h2><button type="button" onClick={onClose}>×</button></div>
+        <label>Item<input name="itemName" placeholder="New item name" value={name} onChange={(event) => setName(event.target.value)} autoFocus /></label>
+        <label>Category<select name="categoryId" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>{categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
+        <label>Priority<select name="priority" value={priority} onChange={(event) => setPriority(event.target.value)}>{priorities.map((value) => <option key={value}>{value}</option>)}</select></label>
+        <label>Bag<select name="bag" value={bag} onChange={(event) => setBag(event.target.value as Bag)}>{bags.map((value) => <option key={value}>{value}</option>)}</select></label>
+        <button className="primary">Add Item</button>
+      </form>
+    </div>
+  );
+}
+
+function AddCategorySheet({ name, setName, onClose, onSubmit }: {
+  name: string;
+  setName: (value: string) => void;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Add category">
+      <form className="sheet compact-sheet" onSubmit={onSubmit}>
+        <div className="sheet-head"><h2>Add Category</h2><button type="button" onClick={onClose}>×</button></div>
+        <label>Category<input name="categoryName" placeholder="New category name" value={name} onChange={(event) => setName(event.target.value)} autoFocus /></label>
+        <button className="primary">Add Category</button>
+      </form>
+    </div>
+  );
+}
+
+function PrioritySheet({
+  priorities,
+  newPriorityName,
+  setNewPriorityName,
+  renamingPriority,
+  setRenamingPriority,
+  renamePriorityValue,
+  setRenamePriorityValue,
+  addPriority,
+  renamePriority,
+  deletePriority,
+  onClose,
+}: {
+  priorities: Priority[];
+  newPriorityName: string;
+  setNewPriorityName: (value: string) => void;
+  renamingPriority: Priority | null;
+  setRenamingPriority: (value: Priority | null) => void;
+  renamePriorityValue: string;
+  setRenamePriorityValue: (value: string) => void;
+  addPriority: (event: FormEvent<HTMLFormElement>) => void;
+  renamePriority: (priority: Priority, nextName: string) => void;
+  deletePriority: (priority: Priority) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Manage priorities">
+      <section className="sheet compact-sheet">
+        <div className="sheet-head"><h2>Priority</h2><button type="button" onClick={onClose}>×</button></div>
+        <section className="priority-manager" aria-label="Priority settings">
+          <div className="manager-title">
+            <span className="section-label">Priority labels</span>
+            <form onSubmit={addPriority}>
+              <input name="priorityName" placeholder="Add priority" value={newPriorityName} onChange={(event) => setNewPriorityName(event.target.value)} />
+              <button>Add</button>
+            </form>
+          </div>
+          <div className="priority-list">
+            {priorities.map((value) => (
+              <div className="priority-chip" key={value}>
+                {renamingPriority === value ? (
+                  <form className="chip-edit" onSubmit={(event) => {
+                    event.preventDefault();
+                    renamePriority(value, renamePriorityValue);
+                  }}>
+                    <input value={renamePriorityValue} onChange={(event) => setRenamePriorityValue(event.target.value)} />
+                    <button>Save</button>
+                  </form>
+                ) : (
+                  <>
+                    <span><PriorityDot priority={value} /> {value}</span>
+                    <div className="icon-actions">
+                      <button type="button" className="icon-button" aria-label={`Rename ${value}`} title="Rename" onClick={() => { setRenamingPriority(value); setRenamePriorityValue(value); }}>✎</button>
+                      <button type="button" className="icon-button danger-icon" aria-label={`Delete ${value}`} title="Delete" onClick={() => deletePriority(value)}>🗑</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      </section>
     </div>
   );
 }

@@ -633,12 +633,68 @@ button.save-pill {
   min-width: min(100%, 380px);
 }
 
-.manage-panel,
+.manage-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+  padding: 10px;
+}
+
 .travel-tools {
   display: grid;
   grid-template-columns: minmax(220px, 0.72fr) minmax(340px, 1.25fr);
   gap: 12px;
   align-items: stretch;
+}
+
+.manage-card {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(31, 90, 166, 0.12);
+  border-radius: 8px;
+  padding: 10px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,252,255,0.9)),
+    linear-gradient(120deg, rgba(31, 90, 166, 0.08), rgba(15, 159, 154, 0.06));
+}
+
+.manage-card:nth-child(2) {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.9), rgba(253,250,255,0.9)),
+    linear-gradient(120deg, rgba(109, 79, 215, 0.08), rgba(223, 71, 109, 0.05));
+}
+
+.manage-card:nth-child(3) {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,253,247,0.92)),
+    linear-gradient(120deg, rgba(244, 183, 64, 0.12), rgba(15, 159, 154, 0.05));
+}
+
+.manage-card > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.manage-card strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manage-card button {
+  min-width: 112px;
+  min-height: 38px;
+  padding: 0 12px;
+  white-space: nowrap;
 }
 
 .manage-form {
@@ -1178,6 +1234,16 @@ button.save-pill {
   font-weight: 800;
 }
 
+.compact-sheet {
+  width: min(500px, 100%);
+  gap: 10px;
+}
+
+.compact-sheet .priority-manager {
+  border-top: 0;
+  padding-top: 0;
+}
+
 .stepper {
   display: grid;
   grid-template-columns: 48px 1fr 48px;
@@ -1483,11 +1549,39 @@ button.save-pill {
     grid-column: span 1;
   }
 
-  .manage-panel,
+  .manage-panel {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 8px;
+  }
+
   .travel-tools {
     grid-template-columns: 1fr;
     gap: 9px;
     padding: 10px;
+  }
+
+  .manage-card {
+    min-height: 58px;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .manage-card .section-label {
+    min-height: 20px;
+    padding: 0 8px;
+    font-size: 0.62rem;
+  }
+
+  .manage-card strong {
+    font-size: 0.84rem;
+  }
+
+  .manage-card button {
+    min-width: 98px;
+    min-height: 34px;
+    padding: 0 9px;
+    font-size: 0.76rem;
   }
 
   .add-category-form,
