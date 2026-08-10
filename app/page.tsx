@@ -929,27 +929,18 @@ export default function Home() {
           </div>
 
           <div className="manage-panel panel">
-            <div className="manage-card">
-              <div>
-                <span className="section-label">Item</span>
-                <strong>Add a packing item</strong>
-              </div>
-              <button className="primary" onClick={() => setAddingItem(true)}>Add Item</button>
-            </div>
-            <div className="manage-card">
-              <div>
-                <span className="section-label">Category</span>
-                <strong>{state.categories.length} categories</strong>
-              </div>
-              <button onClick={() => setAddingCategory(true)}>Add Category</button>
-            </div>
-            <div className="manage-card">
-              <div>
-                <span className="section-label">Priority</span>
-                <strong>{state.priorities.join(" / ")}</strong>
-              </div>
-              <button onClick={() => setManagingPriorities(true)}>Manage</button>
-            </div>
+            <button className="manage-action primary-action" onClick={() => setAddingItem(true)}>
+              <span className="manage-icon" aria-hidden="true">+</span>
+              <span><small>Item</small><strong>Add item</strong></span>
+            </button>
+            <button className="manage-action" onClick={() => setAddingCategory(true)}>
+              <span className="manage-icon" aria-hidden="true">#</span>
+              <span><small>Category</small><strong>Add category</strong></span>
+            </button>
+            <button className="manage-action" onClick={() => setManagingPriorities(true)}>
+              <span className="manage-icon" aria-hidden="true">!</span>
+              <span><small>Priority</small><strong>Manage labels</strong></span>
+            </button>
             <input ref={importRef} type="file" accept="application/json" hidden onChange={importBackup} />
           </div>
 

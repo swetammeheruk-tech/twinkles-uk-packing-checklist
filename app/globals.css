@@ -636,9 +636,12 @@ button.save-pill {
 .manage-panel {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 7px;
   align-items: stretch;
-  padding: 10px;
+  padding: 7px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(247,250,255,0.88)),
+    rgba(255,255,255,0.82);
 }
 
 .travel-tools {
@@ -648,52 +651,98 @@ button.save-pill {
   align-items: stretch;
 }
 
-.manage-card {
-  min-height: 72px;
-  display: flex;
+.manage-action {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: start;
+  gap: 9px;
   overflow: hidden;
   border: 1px solid rgba(31, 90, 166, 0.12);
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px 10px;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,252,255,0.9)),
-    linear-gradient(120deg, rgba(31, 90, 166, 0.08), rgba(15, 159, 154, 0.06));
+    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(248,252,255,0.9)),
+    linear-gradient(120deg, rgba(31, 90, 166, 0.07), rgba(15, 159, 154, 0.05));
+  color: var(--ink);
+  text-align: left;
+  box-shadow: none;
 }
 
-.manage-card:nth-child(2) {
+.manage-action:hover {
+  border-color: rgba(31, 90, 166, 0.22);
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.9), rgba(253,250,255,0.9)),
-    linear-gradient(120deg, rgba(109, 79, 215, 0.08), rgba(223, 71, 109, 0.05));
+    linear-gradient(135deg, #fff, #f7fbff),
+    linear-gradient(120deg, rgba(31, 90, 166, 0.09), rgba(15, 159, 154, 0.06));
 }
 
-.manage-card:nth-child(3) {
+.manage-action.primary-action {
+  border-color: transparent;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,253,247,0.92)),
-    linear-gradient(120deg, rgba(244, 183, 64, 0.12), rgba(15, 159, 154, 0.05));
+    linear-gradient(135deg, rgba(255,255,255,0.1), transparent),
+    linear-gradient(135deg, var(--blue), #17467f);
+  color: #fff;
 }
 
-.manage-card > div {
+.manage-action.primary-action:hover {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.16), transparent),
+    linear-gradient(135deg, #2867b5, var(--blue-dark));
+}
+
+.manage-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  background: rgba(31, 90, 166, 0.09);
+  color: var(--blue);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.primary-action .manage-icon {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+}
+
+.manage-action:nth-child(2) .manage-icon {
+  background: rgba(109, 79, 215, 0.1);
+  color: var(--violet);
+}
+
+.manage-action:nth-child(3) .manage-icon {
+  background: rgba(184, 107, 0, 0.1);
+  color: var(--amber);
+}
+
+.manage-action > span:last-child {
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
-.manage-card strong {
+.manage-action small {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.manage-action.primary-action small {
+  color: rgba(255,255,255,0.82);
+}
+
+.manage-action strong {
   overflow: hidden;
-  color: var(--ink);
-  font-size: 0.95rem;
-  line-height: 1.2;
+  color: inherit;
+  font-size: 0.92rem;
+  line-height: 1.1;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.manage-card button {
-  min-width: 112px;
-  min-height: 38px;
-  padding: 0 12px;
   white-space: nowrap;
 }
 
@@ -1550,9 +1599,9 @@ button.save-pill {
   }
 
   .manage-panel {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
-    padding: 8px;
+    padding: 6px;
   }
 
   .travel-tools {
@@ -1561,27 +1610,30 @@ button.save-pill {
     padding: 10px;
   }
 
-  .manage-card {
-    min-height: 58px;
-    padding: 8px;
-    gap: 8px;
+  .manage-action {
+    min-height: 56px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 5px;
+    padding: 7px 5px;
+    text-align: center;
   }
 
-  .manage-card .section-label {
-    min-height: 20px;
-    padding: 0 8px;
-    font-size: 0.62rem;
+  .manage-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    font-size: 0.86rem;
   }
 
-  .manage-card strong {
-    font-size: 0.84rem;
+  .manage-action small {
+    font-size: 0.56rem;
+    letter-spacing: 0.03em;
   }
 
-  .manage-card button {
-    min-width: 98px;
-    min-height: 34px;
-    padding: 0 9px;
-    font-size: 0.76rem;
+  .manage-action strong {
+    max-width: 100%;
+    font-size: 0.72rem;
   }
 
   .add-category-form,
