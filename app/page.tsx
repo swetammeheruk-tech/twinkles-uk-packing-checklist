@@ -39,6 +39,7 @@ type TravelList = {
 type TravelItem = { id: string; name: string; done: boolean };
 
 type WeightInfo = { current: number; allowance: number };
+type BagDetailItem = Item & { categoryId: string; categoryName: string; categoryIcon: string };
 
 type AppState = {
   categories: Category[];
@@ -1035,25 +1036,29 @@ export default function Home() {
       )}
 
       {tab === "bags" && (
-        <section className="view-grid">
+        <section className="stack bags-view">
           <div className="bag-grid">
             {bags.map((bag) => {
-              const count = allItems.filter((item) => item.bag === bag).length;
-              return <button key={bag} className={`bag-card ${selectedBag === bag ? "active" : ""}`} onClick={() => setSelectedBag(bag)}><strong>{bagIcon(bag)} {bag}</strong><span>{count} Items</span></button>;
+              const items = allItems.filter((item) => item.bag === bag);
+              const weight = state.weights[bag];
+              const weightPct = weight ? Math.min(100, Math.round((weight.current / weight.allowance) * 100)) : 0;
+              return (
+                <button key={bag} className={`bag-card ${selectedBag === bag ? "active" : ""}`} onClick={() => setSelectedBag(bag)}>
+                  <strong>{bagIcon(bag)} {bag}</strong>
+                  <span>{items.length} items</span>
+                  <i className="bag-meter" aria-hidden="true"><em style={{ width: `${weightPct}%` }} /></i>
+                </button>
+              );
             })}
           </div>
-          <WeightTracker weights={state.weights} setWeights={(weights) => setState((s) => ({ ...s, weights }))} requestConfirm={requestConfirm} />
-          <div className="panel">
-            <h2>{bagIcon(selectedBag)} {selectedBag}</h2>
-            <div className="item-list">
-              {allItems.filter((item) => item.bag === selectedBag).map((item) => (
-                <MiniItem key={item.id} item={item} extra={item.categoryName} onBag={(bag) => {
-                  const found = allItems.find((x) => x.id === item.id);
-                  if (found) requestConfirm(`Move "${found.name}" to ${bag}?`, () => updateItem(found.categoryId, found.id, { bag }), { actionLabel: "Move" });
-                }} />
-              ))}
-            </div>
-          </div>
+          <SelectedBagPanel
+            bag={selectedBag}
+            items={allItems.filter((item) => item.bag === selectedBag)}
+            weight={state.weights[selectedBag]}
+            onWeightChange={(weight) => requestConfirm(`Update ${selectedBag} weight details?`, () => {
+              setState((current) => ({ ...current, weights: { ...current.weights, [selectedBag]: weight } }));
+            }, { actionLabel: "Update" })}
+          />
         </section>
       )}
 
@@ -1745,37 +1750,65 @@ function ConfirmSheet({ request, onCancel, onConfirm }: { request: ConfirmReques
   );
 }
 
-function WeightTracker({ weights, setWeights, requestConfirm }: { weights: Record<string, WeightInfo>; setWeights: (weights: Record<string, WeightInfo>) => void; requestConfirm: (message: string, onConfirm: () => void | Promise<void>, options?: Partial<ConfirmRequest>) => void }) {
+function SelectedBagPanel({ bag, items, weight, onWeightChange }: { bag: Bag; items: BagDetailItem[]; weight: WeightInfo; onWeightChange: (weight: WeightInfo) => void }) {
+  const [draft, setDraft] = useState(weight);
+  const packed = items.filter((item) => item.status === "Packed").length;
+  const pct = Math.min(120, Math.round((weight.current / weight.allowance) * 100));
+  const remaining = weight.allowance - weight.current;
+
+  useEffect(() => {
+    setDraft(weight);
+  }, [weight]);
+
+  const commit = () => {
+    const next = {
+      current: Number.isFinite(draft.current) ? draft.current : 0,
+      allowance: Math.max(1, Number.isFinite(draft.allowance) ? draft.allowance : 1),
+    };
+    if (next.current !== weight.current || next.allowance !== weight.allowance) onWeightChange(next);
+  };
+
   return (
-    <section className="panel weight">
-      <h2>⚖️ Luggage Weight</h2>
-      {Object.entries(weights).map(([bag, info]) => {
-        const pct = Math.min(120, Math.round((info.current / info.allowance) * 100));
-        const over = info.current - info.allowance;
-        return (
-          <div className="weight-row" key={bag}>
-            <h3>{bagIcon(bag as Bag)} {bag}</h3>
-            <div className="weight-inputs">
-              <label>Current Weight<input type="number" step="0.1" value={info.current} onChange={(e) => {
-                const next = Number(e.target.value);
-                requestConfirm(`Update ${bag} current weight to ${next} kg?`, () => setWeights({ ...weights, [bag]: { ...info, current: next } }), { actionLabel: "Update" });
-              }} /></label>
-              <label>Airline Allowance<input type="number" step="0.1" value={info.allowance} onChange={(e) => {
-                const next = Number(e.target.value) || 1;
-                requestConfirm(`Update ${bag} allowance to ${next} kg?`, () => setWeights({ ...weights, [bag]: { ...info, allowance: next } }), { actionLabel: "Update" });
-              }} /></label>
-            </div>
-            <div className={`bar ${pct > 100 ? "over" : pct > 85 ? "warn" : ""}`}><span style={{ width: `${Math.min(100, pct)}%` }} /></div>
-            <p>{over > 0 ? `⚠ Bag is ${over.toFixed(1)} kg over the baggage allowance.` : `${(info.allowance - info.current).toFixed(1)} kg remaining`}</p>
-          </div>
-        );
-      })}
+    <section className="panel bag-detail-panel">
+      <div className="bag-detail-head">
+        <div>
+          <span className="section-label">Selected bag</span>
+          <h2>{bagIcon(bag)} {bag}</h2>
+          <p>{items.length} items · {packed} packed</p>
+        </div>
+        <strong className={`weight-badge ${remaining < 0 ? "over" : ""}`}>
+          {remaining < 0 ? `${Math.abs(remaining).toFixed(1)} kg over` : `${remaining.toFixed(1)} kg left`}
+        </strong>
+      </div>
+
+      <div className="bag-weight-compact">
+        <label>Current
+          <input type="number" step="0.1" value={draft.current} onChange={(event) => setDraft((current) => ({ ...current, current: Number(event.target.value) }))} onBlur={commit} />
+        </label>
+        <label>Allowance
+          <input type="number" step="0.1" value={draft.allowance} onChange={(event) => setDraft((current) => ({ ...current, allowance: Number(event.target.value) }))} onBlur={commit} />
+        </label>
+        <div className={`bar ${pct > 100 ? "over" : pct > 85 ? "warn" : ""}`}><span style={{ width: `${Math.min(100, pct)}%` }} /></div>
+      </div>
+
+      <div className="bag-items">
+        {items.length ? items.map((item) => <BagItemCard key={item.id} item={item} />) : <p className="search-empty">No items in this bag yet.</p>}
+      </div>
     </section>
   );
 }
 
-function MiniItem({ item, extra, onBag }: { item: Item; extra: string; onBag: (bag: Bag) => void }) {
-  return <div className={`mini ${item.status === "Packed" ? "packed" : ""}`}><span>{item.name}<small>{extra} · {item.priority}</small></span><select value={item.bag} onChange={(e) => onBag(e.target.value as Bag)}>{bags.map((bag) => <option key={bag}>{bag}</option>)}</select></div>;
+function BagItemCard({ item }: { item: BagDetailItem }) {
+  return (
+    <article className={`bag-item-card ${item.status === "Packed" ? "packed" : ""}`}>
+      <div className="bag-item-title">
+        <strong>{item.name}</strong>
+        <span>{item.status}</span>
+      </div>
+      <small>{item.categoryIcon} {item.categoryName} · {item.priority} · Qty {item.qty}</small>
+      {item.notes && <p>{item.notes}</p>}
+    </article>
+  );
 }
 
 function PriorityDot({ priority }: { priority: Priority }) {

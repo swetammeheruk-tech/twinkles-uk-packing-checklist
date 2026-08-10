@@ -346,8 +346,7 @@ button.save-pill {
 
 .stat span,
 .muted,
-.item-main span,
-.mini small {
+.item-main span {
   color: var(--muted);
 }
 
@@ -1096,8 +1095,7 @@ button.save-pill {
   background: var(--green-soft);
 }
 
-.item-row.packed .item-main strong,
-.mini.packed span {
+.item-row.packed .item-main strong {
   color: var(--muted);
   text-decoration: line-through;
 }
@@ -1108,8 +1106,7 @@ button.save-pill {
   min-width: 0;
 }
 
-.item-main strong,
-.mini span {
+.item-main strong {
   overflow-wrap: anywhere;
 }
 
@@ -1148,19 +1145,20 @@ button.save-pill {
 .bag-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .bag-card {
   display: grid;
-  gap: 5px;
-  min-height: 72px;
+  gap: 6px;
+  min-height: 86px;
   align-content: center;
   border: 1px solid var(--line);
   background:
     linear-gradient(135deg, #fff, #f8fbff);
   color: var(--ink);
   text-align: left;
+  padding: 11px;
 }
 
 .bag-card.active {
@@ -1172,36 +1170,155 @@ button.save-pill {
   box-shadow: 0 14px 30px rgba(31, 90, 166, 0.24);
 }
 
-.mini {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 8px 10px;
+.bag-card span,
+.bag-card small {
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.bag-card.active span,
+.bag-card.active small {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.bag-meter {
+  display: block;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5edf7;
+}
+
+.bag-meter em {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--teal);
+}
+
+.bag-card.active .bag-meter {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.bag-card.active .bag-meter em {
   background: #fff;
 }
 
-.mini span {
+.bag-detail-panel {
   display: grid;
-  gap: 3px;
+  gap: 12px;
 }
 
-.mini select {
-  width: min(190px, 48%);
+.bag-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
 }
 
-.weight-row {
-  border-top: 1px solid var(--line);
-  padding: 10px 0;
+.bag-detail-head h2 {
+  margin: 4px 0 3px;
 }
 
-.weight-inputs {
+.bag-detail-head p {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.weight-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #e9f7ef;
+  color: #12633d;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+}
+
+.weight-badge.over {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.bag-weight-compact {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  align-items: end;
+}
+
+.bag-weight-compact label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.bag-weight-compact input {
+  min-height: 40px;
+}
+
+.bag-weight-compact .bar {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.bag-items {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bag-item-card {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 9px 10px;
+}
+
+.bag-item-card.packed {
+  border-color: rgba(18, 132, 84, 0.24);
+  background: #f3fbf6;
+}
+
+.bag-item-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bag-item-title span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #eef4fb;
+  color: var(--muted);
+  padding: 3px 7px;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.bag-item-card.packed .bag-item-title span {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.bag-item-card strong {
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.bag-item-card small,
+.bag-item-card p {
+  color: var(--muted);
+  line-height: 1.3;
 }
 
 .travel-grid {
@@ -1549,11 +1666,15 @@ button.save-pill {
 
   .view-grid,
   .travel-grid,
-  .bag-grid,
   .cloud-panel,
   .ai-panel {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .bag-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .stats {
@@ -1968,30 +2089,46 @@ button.save-pill {
   }
 
   .bag-card {
-    min-height: 58px;
-    padding: 10px;
+    min-height: 72px;
+    padding: 8px 6px;
+    text-align: center;
   }
 
   .bag-card strong {
-    font-size: 0.9rem;
+    font-size: 0.78rem;
     line-height: 1.15;
   }
 
-  .bag-card span {
-    font-size: 0.78rem;
+  .bag-card span,
+  .bag-card small {
+    font-size: 0.66rem;
   }
 
-  .mini {
+  .bag-detail-head {
     display: grid;
-    grid-template-columns: 1fr;
-    align-items: stretch;
-    gap: 7px;
-    padding: 8px;
+    gap: 8px;
   }
 
-  .mini select,
-  .weight-inputs {
-    width: 100%;
+  .bag-detail-head h2 {
+    font-size: 1.08rem;
+  }
+
+  .weight-badge {
+    width: fit-content;
+    padding: 6px 9px;
+  }
+
+  .bag-items {
+    grid-template-columns: 1fr;
+  }
+
+  .bag-item-card {
+    gap: 7px;
+    padding: 9px;
+  }
+
+  .bag-weight-compact input {
+    min-height: 38px;
   }
 
   .bottom-tools {
@@ -2027,7 +2164,6 @@ button.save-pill {
     padding: 8px 0;
   }
 
-  .weight-inputs,
   .quick-add,
   .inline-form {
     display: grid;
