@@ -1341,6 +1341,120 @@ button.save-pill {
   gap: 16px;
 }
 
+.immigration-practice {
+  display: grid;
+  gap: 10px;
+  border-color: rgba(31, 90, 166, 0.22);
+  background:
+    linear-gradient(135deg, rgba(31, 90, 166, 0.08), rgba(15, 159, 154, 0.08)),
+    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(249,252,255,0.94));
+}
+
+.practice-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.practice-head h2 {
+  margin-bottom: 3px;
+  font-size: 1.28rem;
+}
+
+.practice-head p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.practice-head strong {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: var(--green);
+  padding: 7px 10px;
+  font-size: 0.78rem;
+}
+
+.practice-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5edf7;
+}
+
+.practice-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--teal), var(--green));
+}
+
+.practice-question {
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(31, 90, 166, 0.16);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255,255,255,0.84);
+}
+
+.practice-question.confident {
+  border-color: rgba(23, 131, 69, 0.24);
+  background: rgba(233, 248, 239, 0.72);
+}
+
+.practice-question small,
+.practice-guide span,
+.practice-guide small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.practice-question h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.18;
+}
+
+.practice-guide {
+  display: grid;
+  gap: 5px;
+  border-left: 4px solid var(--teal);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.86);
+}
+
+.practice-guide p {
+  margin: 0;
+  line-height: 1.38;
+}
+
+.practice-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.practice-actions button {
+  min-height: 36px;
+}
+
+.practice-confidence.active {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.danger-text-button {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
 .travel-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1732,16 +1846,17 @@ button.save-pill {
   }
 
   .ai-prompts {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    flex-wrap: wrap;
+    overflow-x: visible;
     padding-bottom: 1px;
   }
 
   .ai-prompts button {
-    flex: 0 0 auto;
+    flex: 1 1 132px;
     min-height: 31px;
     padding: 0 9px;
     font-size: 0.76rem;
+    white-space: normal;
   }
 
   .ai-ask {
@@ -2150,6 +2265,48 @@ button.save-pill {
   .travel-grid {
     grid-template-columns: 1fr;
     gap: 14px;
+  }
+
+  .immigration-practice {
+    gap: 9px;
+  }
+
+  .practice-head {
+    display: flex;
+    gap: 9px;
+  }
+
+  .practice-head h2 {
+    font-size: 1.16rem;
+  }
+
+  .practice-head strong {
+    margin-top: 2px;
+    padding: 6px 9px;
+    font-size: 0.7rem;
+  }
+
+  .practice-question {
+    padding: 11px;
+  }
+
+  .practice-question h3 {
+    font-size: 1.08rem;
+  }
+
+  .practice-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .practice-actions .primary {
+    grid-column: auto;
+  }
+
+  .practice-actions button {
+    min-height: 36px;
+    padding: 0 8px;
+    font-size: 0.76rem;
   }
 
   .travel-list-head {

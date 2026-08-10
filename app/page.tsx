@@ -40,6 +40,8 @@ type TravelItem = { id: string; name: string; done: boolean };
 
 type WeightInfo = { current: number; allowance: number };
 type BagDetailItem = Item & { categoryId: string; categoryName: string; categoryIcon: string };
+type ImmigrationQuestion = { id: string; group: string; question: string; guidance: string; document?: string };
+type ImmigrationPracticeState = { currentQuestionId: string; confidentQuestionIds: string[] };
 
 type AppState = {
   categories: Category[];
@@ -47,6 +49,7 @@ type AppState = {
   weights: Record<string, WeightInfo>;
   dismissedSuggestions: string[];
   priorities: Priority[];
+  immigrationPractice: ImmigrationPracticeState;
 };
 
 type ConfirmRequest = {
@@ -66,6 +69,178 @@ const bags: Bag[] = ["Hand Luggage", "Checked Bag 1", "Checked Bag 2"];
 const defaultPriorities: Priority[] = ["Essential", "Important", "Optional"];
 const statuses: Status[] = ["Not Packed", "Packed"];
 const sources: Source[] = ["Pack from India", "Undecided"];
+const immigrationQuestionGroups: Array<{
+  group: string;
+  groupId: string;
+  guidance: string;
+  document?: string;
+  questions: string[];
+}> = [
+  {
+    group: "Identity and visa",
+    groupId: "identity-visa",
+    guidance: "Answer from the passport, eVisa or decision email. Give exact dates when asked, and do not guess.",
+    document: "Passport, eVisa, decision email",
+    questions: [
+      "What is your name?",
+      "What is your date of birth?",
+      "What is your nationality?",
+      "What type of visa do you have?",
+      "Why have you come to the UK?",
+      "When does your visa start?",
+      "When does your visa expire?",
+      "Are you entering the UK before your visa starts?",
+      "Is this your first visit to the UK?",
+      "How long are you staying?",
+      "Do you have an eVisa?",
+      "Can you show your immigration status?",
+    ],
+  },
+  {
+    group: "Husband and sponsor",
+    groupId: "husband-sponsor",
+    guidance: "Use Swetam's current immigration, employment and contact details. Keep his status and work evidence ready.",
+    document: "Swetam eVisa, passport copy, employment letter",
+    questions: [
+      "Who are you joining in the UK?",
+      "What is your husband’s full name?",
+      "What is your relationship with him?",
+      "Is your husband a British citizen?",
+      "What visa does your husband have?",
+      "When did your husband come to the UK?",
+      "Where does your husband work?",
+      "What does your husband do?",
+      "How much does your husband earn?",
+      "Where is his office?",
+      "How long has your husband worked for his current employer?",
+      "What is your husband’s telephone number?",
+      "Is your husband waiting for you at the airport?",
+      "Can we contact your husband?",
+    ],
+  },
+  {
+    group: "Marriage and relationship",
+    groupId: "marriage-relationship",
+    guidance: "Answer naturally and truthfully. Use the legal wedding date and keep the marriage certificate ready.",
+    document: "Marriage certificate, relationship evidence",
+    questions: [
+      "When did you get married?",
+      "Where did you get married?",
+      "Was it an arranged marriage or a love marriage?",
+      "How did you meet your husband?",
+      "How long have you known each other?",
+      "When did you last see your husband?",
+      "How do you stay in contact while living apart?",
+      "Why were you living separately after marriage?",
+      "Did your husband attend the wedding?",
+      "Who attended your wedding?",
+      "Do you have proof of your marriage?",
+      "When did you apply for the visa?",
+      "Who completed your visa application?",
+    ],
+  },
+  {
+    group: "Accommodation",
+    groupId: "accommodation",
+    guidance: "Give the first-night address and the address shown in your accommodation evidence. Do not use a future address unless it is true for arrival.",
+    document: "Accommodation evidence, address note",
+    questions: [
+      "Where will you stay tonight?",
+      "What is your UK address?",
+      "Who lives at that address?",
+      "Is the property rented or owned?",
+      "Whose name is on the tenancy agreement?",
+      "How many bedrooms does the property have?",
+      "How will you travel from Heathrow to Haywards Heath?",
+      "How far is your accommodation from London?",
+    ],
+  },
+  {
+    group: "Money and support",
+    groupId: "money-support",
+    guidance: "Use current evidence only. If asked for an amount, answer with the truthful amount available that day.",
+    document: "Bank card or statement, payslips, employment letter",
+    questions: [
+      "Who will support you in the UK?",
+      "Do you have any money with you?",
+      "Does your husband have sufficient income?",
+      "Who paid for your flight?",
+      "Who paid for your visa?",
+      "Are you claiming UK benefits?",
+      "Do you have a return ticket?",
+    ],
+  },
+  {
+    group: "Work and study",
+    groupId: "work-study",
+    guidance: "Describe only your genuine current plans. Do not invent a job, employer or course.",
+    document: "Qualification or employment details, if asked",
+    questions: [
+      "Do you intend to work in the UK?",
+      "Do you already have a job in the UK?",
+      "What work did you do in India?",
+      "What are your qualifications?",
+      "Are you coming to work for your husband’s employer?",
+      "Are you planning to study?",
+    ],
+  },
+  {
+    group: "Travel and itinerary",
+    groupId: "travel-itinerary",
+    guidance: "Answer from the actual ticket, boarding pass and route. Keep the travel plan easy to explain.",
+    document: "Flight ticket, boarding passes, travel plan",
+    questions: [
+      "Where have you travelled from?",
+      "What was your flight route?",
+      "When did you leave India?",
+      "When did you arrive in the UK?",
+      "Why did you travel on the first day of your visa?",
+      "Did you collect your luggage in Delhi?",
+      "Are you travelling alone?",
+      "Why did your husband not travel with you?",
+      "Do you have onward travel from Heathrow?",
+    ],
+  },
+  {
+    group: "Immigration history",
+    groupId: "immigration-history",
+    guidance: "Answer honestly and make sure the answer matches the visa application and real travel history.",
+    questions: [
+      "Have you previously applied for a UK visa?",
+      "Have you ever been refused a UK visa?",
+      "Have you ever been refused entry to another country?",
+      "Have you ever overstayed a visa?",
+      "Have you ever breached immigration conditions?",
+      "Do you have any criminal convictions?",
+      "Have any of your circumstances changed since your visa was granted?",
+    ],
+  },
+  {
+    group: "Medical and documents",
+    groupId: "medical-documents",
+    guidance: "Keep the hand-luggage document folder organised. If you do not remember an exact detail, offer to show the document.",
+    document: "TB certificate, IHS proof, marriage and employment evidence",
+    questions: [
+      "Did you complete a tuberculosis test?",
+      "Have you paid the Immigration Health Surcharge?",
+      "Do you have your marriage certificate?",
+      "Do you have evidence of your husband’s immigration status?",
+      "Do you have evidence of your husband’s employment?",
+      "Do you have evidence of accommodation?",
+      "Why are you carrying so many documents?",
+    ],
+  },
+];
+const immigrationQuestions: ImmigrationQuestion[] = immigrationQuestionGroups.flatMap((section) =>
+  section.questions.map((question, index) => ({
+    id: `${section.groupId}-${index + 1}`,
+    group: section.group,
+    question,
+    guidance: section.guidance,
+    document: section.document,
+  })),
+);
+const immigrationQuestionIds = immigrationQuestions.map((question) => question.id);
 
 const makeId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -226,6 +401,10 @@ function freshState(): AppState {
     },
     dismissedSuggestions: [],
     priorities: [...defaultPriorities],
+    immigrationPractice: {
+      currentQuestionId: immigrationQuestions[0].id,
+      confidentQuestionIds: [],
+    },
   };
 }
 
@@ -262,6 +441,12 @@ function normalizeAppState(input: Partial<AppState>): AppState {
     "Checked Bag 2": input.weights?.["Checked Bag 2"] ?? { current: 15, allowance: 23 },
     "Hand Luggage": input.weights?.["Hand Luggage"] ?? { current: 6.8, allowance: 7 },
   };
+  const immigrationPracticeInput = input.immigrationPractice;
+  const currentQuestionId = immigrationQuestionIds.includes(immigrationPracticeInput?.currentQuestionId ?? "")
+    ? immigrationPracticeInput?.currentQuestionId ?? immigrationQuestions[0].id
+    : immigrationQuestions[0].id;
+  const confidentQuestionIds = Array.from(new Set(immigrationPracticeInput?.confidentQuestionIds ?? []))
+    .filter((id) => immigrationQuestionIds.includes(id));
 
   return {
     ...input,
@@ -270,6 +455,10 @@ function normalizeAppState(input: Partial<AppState>): AppState {
     travelLists: input.travelLists?.length ? input.travelLists : fallback.travelLists,
     dismissedSuggestions: input.dismissedSuggestions ?? [],
     priorities,
+    immigrationPractice: {
+      currentQuestionId,
+      confidentQuestionIds,
+    },
   };
 }
 
@@ -307,6 +496,7 @@ export default function Home() {
   const [managingPriorities, setManagingPriorities] = useState(false);
   const [checklistEditMode, setChecklistEditMode] = useState(false);
   const [travelEditMode, setTravelEditMode] = useState(false);
+  const [showImmigrationGuide, setShowImmigrationGuide] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemCategoryId, setNewItemCategoryId] = useState("");
   const [newItemPriority, setNewItemPriority] = useState(defaultPriorities[1]);
@@ -472,6 +662,55 @@ export default function Home() {
       }),
     }))
     .filter((cat) => cat.items.length || !searchTerm);
+  const currentImmigrationQuestion = immigrationQuestions.find((question) => question.id === state.immigrationPractice.currentQuestionId) ?? immigrationQuestions[0];
+  const confidentImmigrationCount = state.immigrationPractice.confidentQuestionIds.length;
+  const currentImmigrationConfident = state.immigrationPractice.confidentQuestionIds.includes(currentImmigrationQuestion.id);
+
+  const pickImmigrationQuestion = () => {
+    setShowImmigrationGuide(false);
+    setState((current) => {
+      const unanswered = immigrationQuestions.filter((question) => !current.immigrationPractice.confidentQuestionIds.includes(question.id) && question.id !== current.immigrationPractice.currentQuestionId);
+      const otherQuestions = immigrationQuestions.filter((question) => question.id !== current.immigrationPractice.currentQuestionId);
+      const pool = unanswered.length ? unanswered : otherQuestions.length ? otherQuestions : immigrationQuestions;
+      const next = pool[Math.floor(Math.random() * pool.length)] ?? immigrationQuestions[0];
+      return {
+        ...current,
+        immigrationPractice: {
+          ...current.immigrationPractice,
+          currentQuestionId: next.id,
+        },
+      };
+    });
+  };
+
+  const toggleImmigrationConfidence = () => {
+    setState((current) => {
+      const confident = new Set(current.immigrationPractice.confidentQuestionIds);
+      if (confident.has(currentImmigrationQuestion.id)) confident.delete(currentImmigrationQuestion.id);
+      else confident.add(currentImmigrationQuestion.id);
+      return {
+        ...current,
+        immigrationPractice: {
+          ...current.immigrationPractice,
+          confidentQuestionIds: Array.from(confident),
+        },
+      };
+    });
+    showToast(currentImmigrationConfident ? "Marked for practice." : "Marked confident.");
+  };
+
+  const resetImmigrationPractice = () => {
+    requestConfirm("Reset all immigration practice confidence marks?", () => {
+      setShowImmigrationGuide(false);
+      setState((current) => ({
+        ...current,
+        immigrationPractice: {
+          currentQuestionId: immigrationQuestions[0].id,
+          confidentQuestionIds: [],
+        },
+      }));
+    }, { title: "Reset practice", actionLabel: "Reset", tone: "danger" });
+  };
 
   const updateCategory = (categoryId: string, updater: (cat: Category) => Category) => {
     setState((current) => ({ ...current, categories: current.categories.map((cat) => (cat.id === categoryId ? updater(cat) : cat)) }));
@@ -1033,6 +1272,18 @@ export default function Home() {
 
         {tab === "travel" && (
           <section className="stack">
+            <ImmigrationPracticePanel
+              question={currentImmigrationQuestion}
+              confidentCount={confidentImmigrationCount}
+              totalCount={immigrationQuestions.length}
+              isConfident={currentImmigrationConfident}
+              showGuide={showImmigrationGuide}
+              onNext={pickImmigrationQuestion}
+              onToggleGuide={() => setShowImmigrationGuide((current) => !current)}
+              onToggleConfident={toggleImmigrationConfidence}
+              onReset={resetImmigrationPractice}
+            />
+
             <ModeStrip label="Travel" active={travelEditMode} onToggle={toggleTravelEditMode} />
 
             <section className="travel-grid">
@@ -1265,6 +1516,69 @@ function SearchResultPanel({ query, results }: { query: string; results: (Item &
         <p className="search-empty">Try a document name, category, bag, priority, or status.</p>
       )}
       {results.length > 8 && <p className="search-empty">Showing first 8 matches. Type more to narrow the search.</p>}
+    </section>
+  );
+}
+
+function ImmigrationPracticePanel({
+  question,
+  confidentCount,
+  totalCount,
+  isConfident,
+  showGuide,
+  onNext,
+  onToggleGuide,
+  onToggleConfident,
+  onReset,
+}: {
+  question: ImmigrationQuestion;
+  confidentCount: number;
+  totalCount: number;
+  isConfident: boolean;
+  showGuide: boolean;
+  onNext: () => void;
+  onToggleGuide: () => void;
+  onToggleConfident: () => void;
+  onReset: () => void;
+}) {
+  const progress = totalCount ? Math.round((confidentCount / totalCount) * 100) : 0;
+
+  return (
+    <section className="panel immigration-practice">
+      <div className="practice-head">
+        <div>
+          <span className="section-label">Immigration practice</span>
+          <h2>Border practice</h2>
+          <p>Answer aloud, then check the guide.</p>
+        </div>
+        <strong>{confidentCount}/{totalCount} confident</strong>
+      </div>
+
+      <div className="practice-progress" aria-label={`Immigration practice confidence: ${progress}%`}>
+        <span style={{ width: `${progress}%` }} />
+      </div>
+
+      <article className={`practice-question ${isConfident ? "confident" : ""}`}>
+        <small>{question.group}</small>
+        <h3>{question.question}</h3>
+      </article>
+
+      {showGuide && (
+        <div className="practice-guide">
+          <span>Answer guide</span>
+          <p>{question.guidance}</p>
+          {question.document && <small>Keep ready: {question.document}</small>}
+        </div>
+      )}
+
+      <div className="practice-actions">
+        <button className="primary" type="button" onClick={onNext}>New question</button>
+        <button type="button" onClick={onToggleGuide}>{showGuide ? "Hide guide" : "Guide"}</button>
+        <button type="button" className={isConfident ? "practice-confidence active" : "practice-confidence"} onClick={onToggleConfident}>
+          {isConfident ? "Ready" : "Know it"}
+        </button>
+        <button type="button" className="danger-text-button" onClick={onReset}>Reset</button>
+      </div>
     </section>
   );
 }
