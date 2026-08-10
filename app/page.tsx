@@ -317,10 +317,6 @@ export default function Home() {
   const [newPriorityName, setNewPriorityName] = useState("");
   const [renamingPriority, setRenamingPriority] = useState<string | null>(null);
   const [renamePriorityValue, setRenamePriorityValue] = useState("");
-  const [newTravelListTitle, setNewTravelListTitle] = useState("");
-  const [newTravelListIcon, setNewTravelListIcon] = useState("✓");
-  const [newTravelItemName, setNewTravelItemName] = useState("");
-  const [newTravelListId, setNewTravelListId] = useState("");
   const [renamingTravelList, setRenamingTravelList] = useState<string | null>(null);
   const [renamingTravelItem, setRenamingTravelItem] = useState<{ listId: string; itemId: string } | null>(null);
   const [travelRenameValue, setTravelRenameValue] = useState("");
@@ -378,8 +374,6 @@ export default function Home() {
 
   const selectedNewItemCategoryId = state.categories.some((cat) => cat.id === newItemCategoryId) ? newItemCategoryId : state.categories[0]?.id ?? "";
   const selectedNewItemPriority = state.priorities.includes(newItemPriority) ? newItemPriority : state.priorities[0] ?? defaultPriorities[1];
-  const selectedNewTravelListId = state.travelLists.some((list) => list.id === newTravelListId) ? newTravelListId : state.travelLists[0]?.id ?? "";
-
   const supabase = useMemo<SupabaseClient | null>(() => {
     const normalizedUrl = normalizeSupabaseUrl(cloudUrl);
     const normalizedKey = cloudKey.trim();
@@ -593,32 +587,6 @@ export default function Home() {
 
   const updateTravelList = (listId: string, updater: (list: TravelList) => TravelList) => {
     setState((current) => ({ ...current, travelLists: current.travelLists.map((list) => (list.id === listId ? updater(list) : list)) }));
-  };
-
-  const addTravelList = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const title = String(form.get("travelListTitle") ?? newTravelListTitle).trim();
-    if (!title) return;
-    const icon = String(form.get("travelListIcon") ?? newTravelListIcon).trim() || "✓";
-    requestConfirm(`Add travel section "${title}"?`, () => {
-      setState((current) => ({ ...current, travelLists: [...current.travelLists, { id: makeId("travel-list"), title, icon, items: [] }] }));
-      setNewTravelListTitle("");
-      setNewTravelListIcon("✓");
-    }, { actionLabel: "Add section" });
-  };
-
-  const addTravelItem = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const itemName = String(form.get("travelItemName") ?? newTravelItemName).trim();
-    const listId = String(form.get("travelListId") ?? selectedNewTravelListId) || state.travelLists[0]?.id;
-    const list = state.travelLists.find((travelList) => travelList.id === listId);
-    if (!itemName || !list) return;
-    requestConfirm(`Add "${itemName}" to ${list.title}?`, () => {
-      updateTravelList(list.id, (travelList) => ({ ...travelList, items: [...travelList.items, { id: makeId("travel"), name: itemName, done: false }] }));
-      setNewTravelItemName("");
-    }, { actionLabel: "Add item" });
   };
 
   const renameTravelListSubmit = (list: TravelList, nextTitle: string) => {
@@ -1064,23 +1032,6 @@ export default function Home() {
 
       {tab === "travel" && (
         <section className="stack">
-          <div className="travel-tools panel">
-            <form className="manage-form travel-section-form" onSubmit={addTravelList}>
-              <span className="section-label">Travel section</span>
-              <input name="travelListIcon" aria-label="Travel section icon" value={newTravelListIcon} onChange={(e) => setNewTravelListIcon(e.target.value)} />
-              <input name="travelListTitle" placeholder="New travel section" value={newTravelListTitle} onChange={(e) => setNewTravelListTitle(e.target.value)} />
-              <button>Add Section</button>
-            </form>
-            <form className="manage-form travel-item-form" onSubmit={addTravelItem}>
-              <span className="section-label">Travel check</span>
-              <input name="travelItemName" placeholder="New travel check" value={newTravelItemName} onChange={(e) => setNewTravelItemName(e.target.value)} />
-              <select name="travelListId" value={selectedNewTravelListId} onChange={(e) => setNewTravelListId(e.target.value)} aria-label="Travel section for new check">
-                {state.travelLists.map((list) => <option key={list.id} value={list.id}>{list.title}</option>)}
-              </select>
-              <button>Add Check</button>
-            </form>
-          </div>
-
           <ModeStrip label="Travel" active={travelEditMode} onToggle={toggleTravelEditMode} />
 
           <section className="travel-grid">
@@ -1667,16 +1618,19 @@ function PrioritySheet({
 }) {
   return (
     <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Manage priorities">
-      <section className="sheet compact-sheet">
-        <div className="sheet-head"><h2>Priority</h2><button type="button" onClick={onClose}>×</button></div>
-        <section className="priority-manager" aria-label="Priority settings">
-          <div className="manager-title">
-            <span className="section-label">Priority labels</span>
-            <form onSubmit={addPriority}>
-              <input name="priorityName" placeholder="Add priority" value={newPriorityName} onChange={(event) => setNewPriorityName(event.target.value)} />
-              <button>Add</button>
-            </form>
+      <section className="sheet compact-sheet priority-sheet">
+        <div className="sheet-head">
+          <div>
+            <span className="section-label">Settings</span>
+            <h2>Priority Labels</h2>
           </div>
+          <button type="button" onClick={onClose}>×</button>
+        </div>
+        <section className="priority-manager" aria-label="Priority settings">
+          <form className="priority-add-form" onSubmit={addPriority}>
+            <input name="priorityName" placeholder="Add new priority" value={newPriorityName} onChange={(event) => setNewPriorityName(event.target.value)} />
+            <button>Add</button>
+          </form>
           <div className="priority-list">
             {priorities.map((value) => (
               <div className="priority-chip" key={value}>
@@ -1687,13 +1641,14 @@ function PrioritySheet({
                   }}>
                     <input value={renamePriorityValue} onChange={(event) => setRenamePriorityValue(event.target.value)} />
                     <button>Save</button>
+                    <button type="button" onClick={() => setRenamingPriority(null)}>Cancel</button>
                   </form>
                 ) : (
                   <>
-                    <span><PriorityDot priority={value} /> {value}</span>
-                    <div className="icon-actions">
-                      <button type="button" className="icon-button" aria-label={`Rename ${value}`} title="Rename" onClick={() => { setRenamingPriority(value); setRenamePriorityValue(value); }}>✎</button>
-                      <button type="button" className="icon-button danger-icon" aria-label={`Delete ${value}`} title="Delete" onClick={() => deletePriority(value)}>🗑</button>
+                    <span className="priority-name"><PriorityDot priority={value} /> {value}</span>
+                    <div className="priority-row-actions">
+                      <button type="button" aria-label={`Rename ${value}`} onClick={() => { setRenamingPriority(value); setRenamePriorityValue(value); }}>Edit</button>
+                      <button type="button" className="danger-text" aria-label={`Delete ${value}`} onClick={() => deletePriority(value)}>Delete</button>
                     </div>
                   </>
                 )}

@@ -738,13 +738,6 @@ button.save-pill {
     rgba(255,255,255,0.82);
 }
 
-.travel-tools {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.72fr) minmax(340px, 1.25fr);
-  gap: 12px;
-  align-items: stretch;
-}
-
 .manage-action {
   min-height: 58px;
   display: grid;
@@ -890,67 +883,84 @@ button.save-pill {
   grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
 }
 
-.add-item-form .section-label,
-.travel-item-form .section-label {
+.add-item-form .section-label {
   grid-column: 1 / -1;
 }
 
-.add-item-form input,
-.travel-item-form input {
+.add-item-form input {
   grid-column: span 2;
 }
 
 .priority-manager {
   grid-column: 1 / -1;
   display: grid;
-  gap: 10px;
-  border-top: 1px solid var(--line);
-  padding-top: 12px;
+  gap: 12px;
 }
 
-.manager-title {
+.priority-list {
+  display: grid;
+  gap: 7px;
+}
+
+.priority-chip {
+  min-height: 44px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.96), rgba(248,251,255,0.92)),
+    #fff;
 }
 
-.manager-title form {
-  width: min(430px, 100%);
+.priority-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.priority-row-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.priority-row-actions button,
+.chip-edit button {
+  min-height: 30px;
+  border-radius: 7px;
+  padding: 0 10px;
+  background: #f2f7fd;
+  color: var(--blue);
+  font-size: 0.76rem;
+}
+
+.priority-row-actions .danger-text {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.chip-edit {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto auto;
+  gap: 6px;
+}
+
+.priority-add-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
 
-.priority-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.priority-chip {
-  min-height: 38px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 5px 6px 5px 10px;
-  background: rgba(255,255,255,0.78);
-}
-
-.priority-chip > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 800;
-}
-
-.chip-edit {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) auto;
-  gap: 6px;
+.priority-add-form button {
+  min-width: 72px;
 }
 
 .icon-actions {
@@ -1375,18 +1385,6 @@ button.save-pill {
   grid-column: 1 / -1;
 }
 
-.travel-section-form {
-  grid-template-columns: 56px minmax(0, 1fr) auto;
-}
-
-.travel-section-form .section-label {
-  grid-column: 1 / -1;
-}
-
-.travel-item-form {
-  grid-template-columns: minmax(0, 1fr) minmax(170px, 0.7fr) auto;
-}
-
 .travel-item.done span {
   color: var(--muted);
   text-decoration: line-through;
@@ -1550,6 +1548,11 @@ button.save-pill {
 .compact-sheet {
   width: min(500px, 100%);
   gap: 10px;
+}
+
+.priority-sheet {
+  width: min(430px, 100%);
+  gap: 14px;
 }
 
 .compact-sheet .priority-manager {
@@ -1882,12 +1885,6 @@ button.save-pill {
     padding: 6px;
   }
 
-  .travel-tools {
-    grid-template-columns: 1fr;
-    gap: 9px;
-    padding: 10px;
-  }
-
   .manage-action {
     min-height: 56px;
     grid-template-columns: 1fr;
@@ -1932,9 +1929,7 @@ button.save-pill {
     font-size: 0.74rem;
   }
 
-  .add-category-form,
-  .travel-section-form,
-  .travel-item-form {
+  .add-category-form {
     grid-template-columns: 1fr;
     gap: 7px;
   }
@@ -1950,22 +1945,12 @@ button.save-pill {
     grid-column: 1 / -1;
   }
 
-  .travel-item-form input {
-    grid-column: auto;
-  }
-
-  .manager-title {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .manager-title form {
-    width: 100%;
-    grid-template-columns: minmax(0, 1fr) 68px;
-  }
-
   .priority-manager {
-    padding-top: 10px;
+    padding-top: 0;
+  }
+
+  .priority-add-form {
+    grid-template-columns: minmax(0, 1fr) 68px;
   }
 
   .priority-list {
@@ -1973,13 +1958,18 @@ button.save-pill {
   }
 
   .priority-chip {
-    flex: 1 1 145px;
-    justify-content: space-between;
-    padding: 5px 6px 5px 9px;
+    min-height: 42px;
+    padding: 7px 8px;
+  }
+
+  .priority-row-actions button,
+  .chip-edit button {
+    padding: 0 8px;
+    font-size: 0.72rem;
   }
 
   .chip-edit {
-    width: 100%;
+    grid-template-columns: minmax(110px, 1fr) auto auto;
   }
 
   .category-head {
@@ -2237,7 +2227,6 @@ button.save-pill {
 	  .manage-panel,
 	  .mode-strip,
 	  .bottom-tools,
-	  .travel-tools,
 	  .category-actions,
 	  .quick-add,
 	  .icon-actions,
