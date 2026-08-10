@@ -299,9 +299,6 @@ export default function Home() {
   const [state, setState] = usePackingState();
   const [tab, setTab] = useState<Tab>("overview");
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("All");
-  const [categoryFilter, setCategoryFilter] = useState("All Categories");
-  const [bagFilter, setBagFilter] = useState("All Bags");
   const [selectedBag, setSelectedBag] = useState<Bag>("Hand Luggage");
   const [editing, setEditing] = useState<{ item: Item; categoryId: string } | null>(null);
   const [addingItem, setAddingItem] = useState(false);
@@ -462,23 +459,24 @@ export default function Home() {
     return ideas.filter((idea) => !state.dismissedSuggestions.includes(idea));
   }, [allItems, state.dismissedSuggestions]);
 
+  const searchTerm = query.trim().toLowerCase();
+  const searchResults = searchTerm
+    ? allItems.filter((item) => {
+        const text = `${item.name} ${item.notes} ${item.categoryName} ${item.priority} ${item.bag} ${item.status}`.toLowerCase();
+        return text.includes(searchTerm);
+      })
+    : [];
+
   const filteredCategories = state.categories
     .map((cat) => ({
       ...cat,
       items: cat.items.filter((item) => {
-        const text = `${item.name} ${item.notes}`.toLowerCase();
-        const matchesSearch = text.includes(query.toLowerCase());
-        const matchesFilter =
-          filter === "All" ||
-          (filter === "Remaining" && item.status !== "Packed") ||
-          (filter === "Packed" && item.status === "Packed") ||
-          (filter.startsWith("priority:") && item.priority === filter.replace("priority:", ""));
-        const matchesCategory = categoryFilter === "All Categories" || cat.name === categoryFilter;
-        const matchesBag = bagFilter === "All Bags" || item.bag === bagFilter;
-        return matchesSearch && matchesFilter && matchesCategory && matchesBag;
+        if (!searchTerm) return true;
+        const text = `${item.name} ${item.notes} ${cat.name} ${item.priority} ${item.bag} ${item.status}`.toLowerCase();
+        return text.includes(searchTerm);
       }),
     }))
-    .filter((cat) => cat.items.length || categoryFilter === cat.name || (!query && filter === "All" && bagFilter === "All Bags" && categoryFilter === "All Categories"));
+    .filter((cat) => cat.items.length || !searchTerm);
 
   const updateCategory = (categoryId: string, updater: (cat: Category) => Category) => {
     setState((current) => ({ ...current, categories: current.categories.map((cat) => (cat.id === categoryId ? updater(cat) : cat)) }));
@@ -935,20 +933,7 @@ export default function Home() {
         <section className="stack">
           <div className="toolbar panel">
             <input aria-label="Search packing items" placeholder="🔍 Search packing items..." value={query} onChange={(e) => setQuery(e.target.value)} />
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter by status">
-              {["All", "Remaining", "Packed"].map((value) => <option key={value}>{value}</option>)}
-              <optgroup label="Priority">
-                {state.priorities.map((priority) => <option key={priority} value={`priority:${priority}`}>{priority}</option>)}
-              </optgroup>
-            </select>
-            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} aria-label="Filter by category">
-              <option>All Categories</option>
-              {state.categories.map((cat) => <option key={cat.id}>{cat.name}</option>)}
-            </select>
-            <select value={bagFilter} onChange={(e) => setBagFilter(e.target.value)} aria-label="Filter by bag">
-              <option>All Bags</option>
-              {bags.map((bag) => <option key={bag}>{bag}</option>)}
-            </select>
+            {searchTerm && <SearchResultPanel query={query} results={searchResults} />}
           </div>
 
           <div className="manage-panel panel">
@@ -1288,6 +1273,41 @@ function ModeStrip({ label, active, onToggle }: { label: string; active: boolean
         {active ? "Done" : "Edit / Delete"}
       </button>
     </div>
+  );
+}
+
+function SearchResultPanel({ query, results }: { query: string; results: (Item & { categoryId: string; categoryName: string; categoryIcon: string })[] }) {
+  return (
+    <section className="search-results" aria-live="polite">
+      <div className="search-results-head">
+        <span>
+          <strong>Search results</strong>
+          <small>{results.length ? `${results.length} match${results.length === 1 ? "" : "es"} for "${query.trim()}"` : `No item found for "${query.trim()}"`}</small>
+        </span>
+      </div>
+      {results.length > 0 ? (
+        <div className="search-result-list">
+          {results.slice(0, 8).map((item) => (
+            <article className="search-result-card" key={`${item.categoryId}-${item.id}`}>
+              <div>
+                <strong>{item.name}</strong>
+                <small>{item.categoryIcon} {item.categoryName}</small>
+              </div>
+              <dl>
+                <div><dt>Priority</dt><dd><PriorityDot priority={item.priority} /> {item.priority}</dd></div>
+                <div><dt>Bag</dt><dd>{bagIcon(item.bag)} {item.bag}</dd></div>
+                <div><dt>Qty</dt><dd>{item.qty}</dd></div>
+                <div><dt>Status</dt><dd>{item.status}</dd></div>
+              </dl>
+              {item.notes && <p>{item.notes}</p>}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="search-empty">Try a document name, category, bag, priority, or status.</p>
+      )}
+      {results.length > 8 && <p className="search-empty">Showing first 8 matches. Type more to narrow the search.</p>}
+    </section>
   );
 }
 
