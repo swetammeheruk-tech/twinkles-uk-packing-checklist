@@ -45,6 +45,14 @@ type AppState = {
   dismissedSuggestions: string[];
 };
 
+type ConfirmRequest = {
+  title: string;
+  message: string;
+  actionLabel?: string;
+  tone?: "default" | "danger";
+  onConfirm: () => void | Promise<void>;
+};
+
 const storageKey = "twinkles-uk-packing-checklist-v1";
 const cloudSettingsKey = "twinkles-cloud-settings-v1";
 const cloudChecklistKey = "twinkles-cloud-checklist-id-v1";
@@ -54,7 +62,6 @@ const bags: Bag[] = ["Hand Luggage", "Checked Bag 1", "Checked Bag 2"];
 const priorities: Priority[] = ["Essential", "Important", "Optional"];
 const statuses: Status[] = ["Not Packed", "Packed"];
 const sources: Source[] = ["Pack from India", "Undecided"];
-const confirmChange = (message: string) => window.confirm(message);
 
 const makeId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -297,9 +304,26 @@ export default function Home() {
   const [cloudStatus, setCloudStatus] = useState("Local autosave is active.");
   const [cloudChecklistId, setCloudChecklistId] = useState("");
   const [cloudBusy, setCloudBusy] = useState(false);
+  const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
+  const [toast, setToast] = useState("");
   const importRef = useRef<HTMLInputElement>(null);
   const cloudHydrating = useRef(false);
   const latestCloudUpdatedAt = useRef("");
+
+  const showToast = (message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 2600);
+  };
+
+  const requestConfirm = (message: string, onConfirm: () => void | Promise<void>, options: Partial<ConfirmRequest> = {}) => {
+    setConfirmRequest({
+      title: options.title ?? "Confirm change",
+      message,
+      actionLabel: options.actionLabel ?? "Confirm",
+      tone: options.tone ?? "default",
+      onConfirm,
+    });
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
@@ -428,10 +452,12 @@ export default function Home() {
   const addQuickItem = (event: FormEvent, categoryId: string) => {
     event.preventDefault();
     if (!quickName.trim()) return;
-    if (!confirmChange(`Add "${quickName.trim()}" to this category?`)) return;
-    updateCategory(categoryId, (cat) => ({ ...cat, items: [...cat.items, defaultItem(quickName.trim())] }));
-    setQuickName("");
-    setNewItemCategory(null);
+    const itemName = quickName.trim();
+    requestConfirm(`Add "${itemName}" to this category?`, () => {
+      updateCategory(categoryId, (cat) => ({ ...cat, items: [...cat.items, defaultItem(itemName)] }));
+      setQuickName("");
+      setNewItemCategory(null);
+    }, { actionLabel: "Add item" });
   };
 
   const exportBackup = () => {
@@ -451,9 +477,15 @@ export default function Home() {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result)) as AppState;
-        if (Array.isArray(parsed.categories)) setState(normalizeAppState(parsed));
+        if (Array.isArray(parsed.categories)) {
+          const nextState = normalizeAppState(parsed);
+          requestConfirm("Import this backup and replace the current checklist?", () => setState(nextState), {
+            title: "Import backup",
+            actionLabel: "Import",
+          });
+        }
       } catch {
-        alert("That backup file could not be imported.");
+        showToast("That backup file could not be imported.");
       }
     };
     reader.readAsText(file);
@@ -463,14 +495,14 @@ export default function Home() {
   const copyChecklist = async () => {
     const text = state.categories.map((cat) => `${cat.icon} ${cat.name}\n${cat.items.map((item) => `${item.status === "Packed" ? "[x]" : "[ ]"} ${item.name} (${item.qty}) - ${item.priority} - ${item.bag}`).join("\n")}`).join("\n\n");
     await navigator.clipboard.writeText(text);
-    alert("Checklist copied.");
+    showToast("Checklist copied.");
   };
 
   const resetAll = () => {
-    if (confirm("Are you sure you want to reset Twinkle’s packing checklist? All packing progress and custom items will be removed.")) {
+    requestConfirm("Reset Twinkle’s packing checklist? All packing progress and custom items will be removed.", () => {
       setState(freshState());
       setTab("overview");
-    }
+    }, { title: "Reset checklist", actionLabel: "Reset", tone: "danger" });
   };
 
   const saveCloudSettings = () => {
@@ -571,22 +603,23 @@ export default function Home() {
     }, 800);
   };
 
-  const deleteCloudChecklist = async () => {
+  const deleteCloudChecklist = () => {
     if (!supabase || !cloudUser) {
       setCloudStatus("No cloud checklist is selected.");
       return;
     }
-    if (!confirm("Delete the cloud copy of this checklist? Your local browser copy will remain.")) return;
-    setCloudBusy(true);
-    const { error } = await supabase.from("packing_checklists").delete().eq("share_key", sharedChecklistKey);
-    setCloudBusy(false);
-    if (error) {
-      setCloudStatus(friendlyCloudError(error.message));
-      return;
-    }
-    setCloudChecklistId("");
-    localStorage.removeItem(cloudChecklistKey);
-    setCloudStatus("Cloud checklist deleted. Local copy is still saved here.");
+    requestConfirm("Delete the cloud copy of this checklist? The local copy will remain on this device.", async () => {
+      setCloudBusy(true);
+      const { error } = await supabase.from("packing_checklists").delete().eq("share_key", sharedChecklistKey);
+      setCloudBusy(false);
+      if (error) {
+        setCloudStatus(friendlyCloudError(error.message));
+        return;
+      }
+      setCloudChecklistId("");
+      localStorage.removeItem(cloudChecklistKey);
+      setCloudStatus("Cloud checklist deleted. Local copy is still saved here.");
+    }, { title: "Delete cloud copy", actionLabel: "Delete", tone: "danger" });
   };
 
   useEffect(() => {
@@ -690,7 +723,10 @@ export default function Home() {
           <Stats total={allItems.length} packed={packedCount} remaining={remainingCount} essential={essentialRemaining} />
           <ProgressPanel categories={state.categories} total={allItems.length} packed={packedCount} progress={progress} />
           <EssentialAlert items={essentialItems} />
-          <SuggestionPanel suggestions={suggestions} dismiss={(idea) => setState((s) => ({ ...s, dismissedSuggestions: [...s.dismissedSuggestions, idea] }))} />
+          <SuggestionPanel
+            suggestions={suggestions}
+            dismiss={(idea) => requestConfirm(`Dismiss this suggestion: "${idea}"?`, () => setState((s) => ({ ...s, dismissedSuggestions: [...s.dismissedSuggestions, idea] })), { actionLabel: "Dismiss" })}
+          />
         </section>
       )}
 
@@ -715,9 +751,11 @@ export default function Home() {
             <form className="new-category" onSubmit={(e) => {
               e.preventDefault();
               if (!newCategoryName.trim()) return;
-              if (!confirmChange(`Add new category "${newCategoryName.trim()}"?`)) return;
-              setState((s) => ({ ...s, categories: [...s.categories, category(newCategoryName.trim(), "📦", [])] }));
-              setNewCategoryName("");
+              const categoryName = newCategoryName.trim();
+              requestConfirm(`Add new category "${categoryName}"?`, () => {
+                setState((s) => ({ ...s, categories: [...s.categories, category(categoryName, "📦", [])] }));
+                setNewCategoryName("");
+              }, { actionLabel: "Add category" });
             }}>
               <input placeholder="New category name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} />
               <button>Add Category</button>
@@ -733,29 +771,30 @@ export default function Home() {
           {filteredCategories.map((cat, catIndex) => (
             <article className="category panel" key={cat.id}>
               <div className="category-head">
-                <button className="collapse" onClick={() => confirmChange(`${cat.collapsed ? "Expand" : "Collapse"} "${cat.name}"?`) && updateCategory(cat.id, (c) => ({ ...c, collapsed: !c.collapsed }))}>{cat.collapsed ? "＋" : "−"}</button>
+                <button className="collapse" onClick={() => updateCategory(cat.id, (c) => ({ ...c, collapsed: !c.collapsed }))}>{cat.collapsed ? "＋" : "−"}</button>
                 <h2>{cat.icon} {cat.name}</h2>
                 <span>{cat.items.filter((item) => item.status === "Packed").length}/{cat.items.length}</span>
-                <button title="Move category up" disabled={catIndex === 0} onClick={() => setState((s) => {
+                <button title="Move category up" disabled={catIndex === 0} onClick={() => requestConfirm(`Move "${cat.name}" up?`, () => setState((s) => {
                   const next = [...s.categories];
                   const realIndex = next.findIndex((c) => c.id === cat.id);
                   if (realIndex > 0) [next[realIndex - 1], next[realIndex]] = [next[realIndex], next[realIndex - 1]];
                   return { ...s, categories: next };
-                })}>↑</button>
-                <button title="Move category down" disabled={catIndex === filteredCategories.length - 1} onClick={() => setState((s) => {
+                }), { actionLabel: "Move" })}>↑</button>
+                <button title="Move category down" disabled={catIndex === filteredCategories.length - 1} onClick={() => requestConfirm(`Move "${cat.name}" down?`, () => setState((s) => {
                   const next = [...s.categories];
                   const realIndex = next.findIndex((c) => c.id === cat.id);
                   if (realIndex < next.length - 1) [next[realIndex + 1], next[realIndex]] = [next[realIndex], next[realIndex + 1]];
                   return { ...s, categories: next };
-                })}>↓</button>
+                }), { actionLabel: "Move" })}>↓</button>
               </div>
               {renamingCategory === cat.id ? (
                 <form className="inline-form" onSubmit={(e) => {
                   e.preventDefault();
                   const nextName = renameValue.trim() || cat.name;
-                  if (!confirmChange(`Rename "${cat.name}" to "${nextName}"?`)) return;
-                  updateCategory(cat.id, (c) => ({ ...c, name: renameValue.trim() || c.name }));
-                  setRenamingCategory(null);
+                  requestConfirm(`Rename "${cat.name}" to "${nextName}"?`, () => {
+                    updateCategory(cat.id, (c) => ({ ...c, name: nextName }));
+                    setRenamingCategory(null);
+                  }, { actionLabel: "Rename" });
                 }}>
                   <input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} />
                   <button>Save</button>
@@ -764,7 +803,7 @@ export default function Home() {
                 <div className="category-actions">
                   <button onClick={() => setNewItemCategory(cat.id)}>Add item</button>
                   <button onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>Rename</button>
-                  <button className="danger" onClick={() => confirmChange(`Delete "${cat.name}" and all items inside it?`) && setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) }))}>Delete</button>
+                  <button className="danger" onClick={() => requestConfirm(`Delete "${cat.name}" and all items inside it?`, () => setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) })), { title: "Delete category", actionLabel: "Delete", tone: "danger" })}>Delete</button>
                 </div>
               )}
               {newItemCategory === cat.id && (
@@ -780,17 +819,17 @@ export default function Home() {
                       key={item.id}
                       item={item}
                       categories={state.categories}
-                      onToggle={() => confirmChange(`Mark "${item.name}" as ${item.status === "Packed" ? "not packed" : "packed"}?`) && updateItem(cat.id, item.id, { status: item.status === "Packed" ? "Not Packed" : "Packed" })}
+                      onToggle={() => requestConfirm(`Mark "${item.name}" as ${item.status === "Packed" ? "not packed" : "packed"}?`, () => updateItem(cat.id, item.id, { status: item.status === "Packed" ? "Not Packed" : "Packed" }), { actionLabel: "Update" })}
                       onEdit={() => setEditing({ item, categoryId: cat.id })}
-                      onDelete={() => confirmChange(`Delete "${item.name}"?`) && updateCategory(cat.id, (c) => ({ ...c, items: c.items.filter((x) => x.id !== item.id) }))}
-                      onMoveCategory={(target) => confirmChange(`Move "${item.name}" to another category?`) && moveItem(cat.id, item.id, target)}
-                      onMoveBag={(bag) => confirmChange(`Move "${item.name}" to ${bag}?`) && updateItem(cat.id, item.id, { bag })}
-                      onReorder={(direction) => updateCategory(cat.id, (c) => {
+                      onDelete={() => requestConfirm(`Delete "${item.name}"?`, () => updateCategory(cat.id, (c) => ({ ...c, items: c.items.filter((x) => x.id !== item.id) })), { title: "Delete item", actionLabel: "Delete", tone: "danger" })}
+                      onMoveCategory={(target) => requestConfirm(`Move "${item.name}" to another category?`, () => moveItem(cat.id, item.id, target), { actionLabel: "Move" })}
+                      onMoveBag={(bag) => requestConfirm(`Move "${item.name}" to ${bag}?`, () => updateItem(cat.id, item.id, { bag }), { actionLabel: "Move" })}
+                      onReorder={(direction) => requestConfirm(`Move "${item.name}" ${direction < 0 ? "up" : "down"}?`, () => updateCategory(cat.id, (c) => {
                         const next = [...c.items];
                         const target = itemIndex + direction;
                         if (target >= 0 && target < next.length) [next[itemIndex], next[target]] = [next[target], next[itemIndex]];
                         return { ...c, items: next };
-                      })}
+                      }), { actionLabel: "Move" })}
                     />
                   ))}
                 </div>
@@ -808,14 +847,14 @@ export default function Home() {
               return <button key={bag} className={`bag-card ${selectedBag === bag ? "active" : ""}`} onClick={() => setSelectedBag(bag)}><strong>{bagIcon(bag)} {bag}</strong><span>{count} Items</span></button>;
             })}
           </div>
-          <WeightTracker weights={state.weights} setWeights={(weights) => setState((s) => ({ ...s, weights }))} />
+          <WeightTracker weights={state.weights} setWeights={(weights) => setState((s) => ({ ...s, weights }))} requestConfirm={requestConfirm} />
           <div className="panel">
             <h2>{bagIcon(selectedBag)} {selectedBag}</h2>
             <div className="item-list">
               {allItems.filter((item) => item.bag === selectedBag).map((item) => (
                 <MiniItem key={item.id} item={item} extra={item.categoryName} onBag={(bag) => {
                   const found = allItems.find((x) => x.id === item.id);
-                  if (found && confirmChange(`Move "${found.name}" to ${bag}?`)) updateItem(found.categoryId, found.id, { bag });
+                  if (found) requestConfirm(`Move "${found.name}" to ${bag}?`, () => updateItem(found.categoryId, found.id, { bag }), { actionLabel: "Move" });
                 }} />
               ))}
             </div>
@@ -831,7 +870,7 @@ export default function Home() {
               <p className="muted">{list.items.filter((item) => item.done).length} / {list.items.length} ready</p>
               {list.items.map((item) => (
                 <label className={`travel-item ${item.done ? "done" : ""}`} key={item.id}>
-                  <input type="checkbox" checked={item.done} onChange={() => setState((s) => ({ ...s, travelLists: s.travelLists.map((tl) => tl.id === list.id ? { ...tl, items: tl.items.map((x) => x.id === item.id ? { ...x, done: !x.done } : x) } : tl) }))} />
+                  <input type="checkbox" checked={item.done} onChange={() => requestConfirm(`Mark "${item.name}" as ${item.done ? "not ready" : "ready"}?`, () => setState((s) => ({ ...s, travelLists: s.travelLists.map((tl) => tl.id === list.id ? { ...tl, items: tl.items.map((x) => x.id === item.id ? { ...x, done: !x.done } : x) } : tl) })), { actionLabel: "Update" })} />
                   <span>{item.name}</span>
                 </label>
               ))}
@@ -856,7 +895,10 @@ export default function Home() {
             onStartSync={startCloudSync}
             onSignOut={() => supabase?.auth.signOut()}
             onSaveCloud={() => void saveToCloud(false)}
-            onLoadCloud={loadFromCloud}
+            onLoadCloud={() => requestConfirm("Load the cloud copy and replace this browser’s current checklist?", loadFromCloud, {
+              title: "Load cloud copy",
+              actionLabel: "Load",
+            })}
             onDeleteCloud={deleteCloudChecklist}
           />
         </section>
@@ -869,13 +911,28 @@ export default function Home() {
           currentCategoryId={editing.categoryId}
           onClose={() => setEditing(null)}
           onSave={(item, targetCategoryId) => {
-            if (!confirmChange(`Save changes to "${item.name}"?`)) return;
-            if (targetCategoryId !== editing.categoryId) moveItem(editing.categoryId, item.id, targetCategoryId, item);
-            else updateItem(editing.categoryId, item.id, item);
-            setEditing(null);
+            requestConfirm(`Save changes to "${item.name}"?`, () => {
+              if (targetCategoryId !== editing.categoryId) moveItem(editing.categoryId, item.id, targetCategoryId, item);
+              else updateItem(editing.categoryId, item.id, item);
+              setEditing(null);
+            }, { actionLabel: "Save" });
           }}
         />
       )}
+
+      {confirmRequest && (
+        <ConfirmSheet
+          request={confirmRequest}
+          onCancel={() => setConfirmRequest(null)}
+          onConfirm={async () => {
+            const action = confirmRequest.onConfirm;
+            setConfirmRequest(null);
+            await action();
+          }}
+        />
+      )}
+
+      {toast && <div className="toast" role="status">{toast}</div>}
 
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {[
@@ -1192,7 +1249,23 @@ function EditSheet({ item, categories, currentCategoryId, onClose, onSave }: {
   );
 }
 
-function WeightTracker({ weights, setWeights }: { weights: Record<string, WeightInfo>; setWeights: (weights: Record<string, WeightInfo>) => void }) {
+function ConfirmSheet({ request, onCancel, onConfirm }: { request: ConfirmRequest; onCancel: () => void; onConfirm: () => void | Promise<void> }) {
+  return (
+    <div className="confirm-backdrop" role="dialog" aria-modal="true" aria-label={request.title}>
+      <section className={`confirm-card ${request.tone === "danger" ? "danger-confirm" : ""}`}>
+        <span className="section-label">{request.tone === "danger" ? "Please confirm" : "Confirm"}</span>
+        <h2>{request.title}</h2>
+        <p>{request.message}</p>
+        <div className="confirm-actions">
+          <button type="button" onClick={onCancel}>Cancel</button>
+          <button type="button" className={request.tone === "danger" ? "danger" : "primary"} onClick={onConfirm}>{request.actionLabel ?? "Confirm"}</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function WeightTracker({ weights, setWeights, requestConfirm }: { weights: Record<string, WeightInfo>; setWeights: (weights: Record<string, WeightInfo>) => void; requestConfirm: (message: string, onConfirm: () => void | Promise<void>, options?: Partial<ConfirmRequest>) => void }) {
   return (
     <section className="panel weight">
       <h2>⚖️ Luggage Weight</h2>
@@ -1205,11 +1278,11 @@ function WeightTracker({ weights, setWeights }: { weights: Record<string, Weight
             <div className="weight-inputs">
               <label>Current Weight<input type="number" step="0.1" value={info.current} onChange={(e) => {
                 const next = Number(e.target.value);
-                if (confirmChange(`Update ${bag} current weight to ${next} kg?`)) setWeights({ ...weights, [bag]: { ...info, current: next } });
+                requestConfirm(`Update ${bag} current weight to ${next} kg?`, () => setWeights({ ...weights, [bag]: { ...info, current: next } }), { actionLabel: "Update" });
               }} /></label>
               <label>Airline Allowance<input type="number" step="0.1" value={info.allowance} onChange={(e) => {
                 const next = Number(e.target.value) || 1;
-                if (confirmChange(`Update ${bag} allowance to ${next} kg?`)) setWeights({ ...weights, [bag]: { ...info, allowance: next } });
+                requestConfirm(`Update ${bag} allowance to ${next} kg?`, () => setWeights({ ...weights, [bag]: { ...info, allowance: next } }), { actionLabel: "Update" });
               }} /></label>
             </div>
             <div className={`bar ${pct > 100 ? "over" : pct > 85 ? "warn" : ""}`}><span style={{ width: `${Math.min(100, pct)}%` }} /></div>
