@@ -619,7 +619,9 @@ button.save-pill {
 }
 
 .actions-row,
-.category-actions {
+.category-actions,
+.icon-actions,
+.backup-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -631,6 +633,124 @@ button.save-pill {
   min-width: min(100%, 380px);
 }
 
+.manage-panel,
+.travel-tools {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(340px, 1.25fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.manage-form {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.add-item-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+}
+
+.add-item-form .section-label,
+.travel-item-form .section-label {
+  grid-column: 1 / -1;
+}
+
+.add-item-form input,
+.travel-item-form input {
+  grid-column: span 2;
+}
+
+.priority-manager {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.manager-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.manager-title form {
+  width: min(430px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.priority-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.priority-chip {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 6px 5px 10px;
+  background: rgba(255,255,255,0.78);
+}
+
+.priority-chip > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+}
+
+.chip-edit {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto;
+  gap: 6px;
+}
+
+.icon-actions {
+  align-items: center;
+  gap: 5px;
+}
+
+.icon-button {
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 1px solid rgba(31, 90, 166, 0.1);
+  background: #f2f7fd;
+  color: var(--blue);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.danger-icon {
+  border-color: rgba(180, 35, 53, 0.1);
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.bottom-tools {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.bottom-tools h2 {
+  margin-bottom: 0;
+}
+
+.backup-actions {
+  justify-content: flex-end;
+}
+
 .category {
   padding: 0;
   overflow: hidden;
@@ -638,7 +758,7 @@ button.save-pill {
 
 .category-head {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto auto;
   gap: 8px;
   align-items: center;
   padding: 12px;
@@ -650,6 +770,8 @@ button.save-pill {
 
 .category-head h2 {
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .collapse {
@@ -760,6 +882,7 @@ button.save-pill {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  background: var(--blue);
 }
 
 .dot.essential {
@@ -840,17 +963,59 @@ button.save-pill {
 }
 
 .travel-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   border-top: 1px solid var(--line);
   padding: 10px 0;
 }
 
+.travel-list-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.travel-list-head h2 {
+  margin-bottom: 4px;
+}
+
+.travel-check {
+  min-width: 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .travel-item input {
   width: 24px;
   min-height: 24px;
   accent-color: var(--blue);
+}
+
+.travel-item-actions {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.travel-rename {
+  width: 100%;
+  margin: 0;
+  grid-column: 1 / -1;
+}
+
+.travel-section-form {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+}
+
+.travel-section-form .section-label {
+  grid-column: 1 / -1;
+}
+
+.travel-item-form {
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 0.7fr) auto;
 }
 
 .travel-item.done span {
@@ -1318,8 +1483,65 @@ button.save-pill {
     grid-column: span 1;
   }
 
+  .manage-panel,
+  .travel-tools {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 10px;
+  }
+
+  .add-category-form,
+  .travel-section-form,
+  .travel-item-form {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .add-item-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .add-item-form .section-label,
+  .add-item-form input,
+  .add-item-form button {
+    grid-column: 1 / -1;
+  }
+
+  .travel-item-form input {
+    grid-column: auto;
+  }
+
+  .manager-title {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .manager-title form {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) 68px;
+  }
+
+  .priority-manager {
+    padding-top: 10px;
+  }
+
+  .priority-list {
+    gap: 6px;
+  }
+
+  .priority-chip {
+    flex: 1 1 145px;
+    justify-content: space-between;
+    padding: 5px 6px 5px 9px;
+  }
+
+  .chip-edit {
+    width: 100%;
+  }
+
   .category-head {
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
     padding: 5px 7px;
   }
 
@@ -1336,7 +1558,7 @@ button.save-pill {
     min-height: 28px;
   }
 
-  .category-head button:nth-last-child(-n + 2) {
+  .move-button {
     display: none;
   }
 
@@ -1351,6 +1573,12 @@ button.save-pill {
     padding: 0 5px;
     min-height: 28px;
     font-size: 0.68rem;
+  }
+
+  .icon-button {
+    width: 30px;
+    min-height: 30px;
+    font-size: 0.82rem;
   }
 
   .item-row {
@@ -1441,6 +1669,39 @@ button.save-pill {
     width: 100%;
   }
 
+  .bottom-tools {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .backup-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .backup-actions button {
+    min-height: 36px;
+    padding: 0 7px;
+    font-size: 0.72rem;
+  }
+
+  .travel-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .travel-list-head {
+    align-items: center;
+  }
+
+  .travel-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 8px 0;
+  }
+
   .weight-inputs,
   .quick-add,
   .inline-form {
@@ -1510,11 +1771,16 @@ button.save-pill {
 
   .top-tabs,
   .mobile-nav,
-  .toolbar,
-  .actions-row,
-  .category-actions,
-  .quick-add,
-  .row-actions,
+	  .toolbar,
+	  .actions-row,
+	  .manage-panel,
+	  .bottom-tools,
+	  .travel-tools,
+	  .category-actions,
+	  .quick-add,
+	  .icon-actions,
+	  .travel-item-actions,
+	  .row-actions,
   .progress-orbit,
   .sheet-backdrop {
     display: none !important;

@@ -3,7 +3,7 @@
 import { ChangeEvent, CSSProperties, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient, SupabaseClient, User } from "@supabase/supabase-js";
 
-type Priority = "Essential" | "Important" | "Optional";
+type Priority = string;
 type Bag = "Hand Luggage" | "Checked Bag 1" | "Checked Bag 2";
 type Status = "Not Packed" | "Packed";
 type Source = "Pack from India" | "Undecided";
@@ -33,8 +33,10 @@ type TravelList = {
   id: string;
   title: string;
   icon: string;
-  items: { id: string; name: string; done: boolean }[];
+  items: TravelItem[];
 };
+
+type TravelItem = { id: string; name: string; done: boolean };
 
 type WeightInfo = { current: number; allowance: number };
 
@@ -43,6 +45,7 @@ type AppState = {
   travelLists: TravelList[];
   weights: Record<string, WeightInfo>;
   dismissedSuggestions: string[];
+  priorities: Priority[];
 };
 
 type ConfirmRequest = {
@@ -59,7 +62,7 @@ const cloudChecklistKey = "twinkles-cloud-checklist-id-v1";
 const sharedChecklistKey = "twinkle-main";
 
 const bags: Bag[] = ["Hand Luggage", "Checked Bag 1", "Checked Bag 2"];
-const priorities: Priority[] = ["Essential", "Important", "Optional"];
+const defaultPriorities: Priority[] = ["Essential", "Important", "Optional"];
 const statuses: Status[] = ["Not Packed", "Packed"];
 const sources: Source[] = ["Pack from India", "Undecided"];
 
@@ -83,7 +86,7 @@ const friendlyCloudError = (message: string) => {
 const bundledSupabaseUrl = normalizeSupabaseUrl(env.VITE_SUPABASE_URL ?? defaultSupabaseUrl);
 const bundledSupabaseAnonKey = (env.VITE_SUPABASE_ANON_KEY ?? defaultSupabaseAnonKey).trim();
 
-const defaultItem = (name: string, priority: Priority = "Important", bag: Bag = "Checked Bag 1", status: Status = "Not Packed", source: Source = "Pack from India"): Item => ({
+const defaultItem = (name: string, priority: Priority = defaultPriorities[1], bag: Bag = "Checked Bag 1", status: Status = "Not Packed", source: Source = "Pack from India"): Item => ({
   id: makeId("item"),
   name,
   qty: 1,
@@ -221,16 +224,18 @@ function freshState(): AppState {
       "Hand Luggage": { current: 6.8, allowance: 7 },
     },
     dismissedSuggestions: [],
+    priorities: [...defaultPriorities],
   };
 }
 
-function normalizeAppState(input: AppState): AppState {
+function normalizeAppState(input: Partial<AppState>): AppState {
   const cleanBag = (bag: string): Bag => {
     if (bag === "Checked Bag 1" || bag === "Checked Bag 2") return bag;
     return "Hand Luggage";
   };
 
-  const categories = (input.categories ?? [])
+  const fallback = freshState();
+  const categories = (input.categories?.length ? input.categories : fallback.categories)
     .filter((cat) => cat.name !== "Buy After Arriving in UK")
     .map((cat) => ({
       ...cat,
@@ -241,10 +246,15 @@ function normalizeAppState(input: AppState): AppState {
         .map((item) => ({
           ...item,
           bag: cleanBag(String(item.bag)),
+          priority: String(item.priority || defaultPriorities[1]),
           status: item.status === "Packed" ? "Packed" : "Not Packed",
           source: item.source === "Undecided" ? "Undecided" : "Pack from India",
         })),
     }));
+
+  const itemPriorities = categories.flatMap((cat) => cat.items.map((item) => item.priority).filter(Boolean));
+  const configuredPriorities = input.priorities?.filter(Boolean) ?? [];
+  const priorities = Array.from(new Set([...(configuredPriorities.length ? configuredPriorities : defaultPriorities), ...itemPriorities]));
 
   const weights: Record<string, WeightInfo> = {
     "Checked Bag 1": input.weights?.["Checked Bag 1"] ?? { current: 20.4, allowance: 23 },
@@ -256,8 +266,9 @@ function normalizeAppState(input: AppState): AppState {
     ...input,
     categories,
     weights,
-    travelLists: input.travelLists ?? [],
+    travelLists: input.travelLists?.length ? input.travelLists : fallback.travelLists,
     dismissedSuggestions: input.dismissedSuggestions ?? [],
+    priorities,
   };
 }
 
@@ -293,11 +304,23 @@ export default function Home() {
   const [bagFilter, setBagFilter] = useState("All Bags");
   const [selectedBag, setSelectedBag] = useState<Bag>("Hand Luggage");
   const [editing, setEditing] = useState<{ item: Item; categoryId: string } | null>(null);
-  const [newItemCategory, setNewItemCategory] = useState<string | null>(null);
-  const [quickName, setQuickName] = useState("");
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemCategoryId, setNewItemCategoryId] = useState("");
+  const [newItemPriority, setNewItemPriority] = useState(defaultPriorities[1]);
+  const [newItemBag, setNewItemBag] = useState<Bag>("Checked Bag 1");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [renamingCategory, setRenamingCategory] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [newPriorityName, setNewPriorityName] = useState("");
+  const [renamingPriority, setRenamingPriority] = useState<string | null>(null);
+  const [renamePriorityValue, setRenamePriorityValue] = useState("");
+  const [newTravelListTitle, setNewTravelListTitle] = useState("");
+  const [newTravelListIcon, setNewTravelListIcon] = useState("✓");
+  const [newTravelItemName, setNewTravelItemName] = useState("");
+  const [newTravelListId, setNewTravelListId] = useState("");
+  const [renamingTravelList, setRenamingTravelList] = useState<string | null>(null);
+  const [renamingTravelItem, setRenamingTravelItem] = useState<{ listId: string; itemId: string } | null>(null);
+  const [travelRenameValue, setTravelRenameValue] = useState("");
   const [cloudUrl, setCloudUrl] = useState(bundledSupabaseUrl);
   const [cloudKey, setCloudKey] = useState(bundledSupabaseAnonKey);
   const [cloudUser, setCloudUser] = useState<User | null>(null);
@@ -328,6 +351,10 @@ export default function Home() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
   }, [tab]);
+
+  const selectedNewItemCategoryId = state.categories.some((cat) => cat.id === newItemCategoryId) ? newItemCategoryId : state.categories[0]?.id ?? "";
+  const selectedNewItemPriority = state.priorities.includes(newItemPriority) ? newItemPriority : state.priorities[0] ?? defaultPriorities[1];
+  const selectedNewTravelListId = state.travelLists.some((list) => list.id === newTravelListId) ? newTravelListId : state.travelLists[0]?.id ?? "";
 
   const supabase = useMemo<SupabaseClient | null>(() => {
     const normalizedUrl = normalizeSupabaseUrl(cloudUrl);
@@ -387,9 +414,10 @@ export default function Home() {
   const allItems = useMemo(() => state.categories.flatMap((cat) => cat.items.map((item) => ({ ...item, categoryId: cat.id, categoryName: cat.name, categoryIcon: cat.icon }))), [state.categories]);
   const packedCount = allItems.filter((item) => item.status === "Packed").length;
   const remainingCount = allItems.length - packedCount;
-  const essentialRemaining = allItems.filter((item) => item.priority === "Essential" && item.status !== "Packed").length;
+  const urgentPriority = state.priorities.includes("Essential") ? "Essential" : state.priorities[0] ?? defaultPriorities[0];
+  const urgentRemaining = allItems.filter((item) => item.priority === urgentPriority && item.status !== "Packed").length;
   const progress = allItems.length ? Math.round((packedCount / allItems.length) * 100) : 0;
-  const essentialItems = allItems.filter((item) => item.priority === "Essential" && item.status !== "Packed");
+  const urgentItems = allItems.filter((item) => item.priority === urgentPriority && item.status !== "Packed");
   const handLuggage = allItems.filter((item) => item.bag === "Hand Luggage");
   const handCore = ["Passport", "Visa", "Boarding Pass", "Phone", "Wallet", "Medicines", "Charger", "Power Bank", "UK Address", "Emergency"];
   const handReady = handCore.filter((term) => handLuggage.some((item) => item.name.toLowerCase().includes(term.toLowerCase()) && item.status === "Packed")).length;
@@ -418,7 +446,7 @@ export default function Home() {
           filter === "All" ||
           (filter === "Remaining" && item.status !== "Packed") ||
           (filter === "Packed" && item.status === "Packed") ||
-          (filter === "Essential" && item.priority === "Essential");
+          (filter.startsWith("priority:") && item.priority === filter.replace("priority:", ""));
         const matchesCategory = categoryFilter === "All Categories" || cat.name === categoryFilter;
         const matchesBag = bagFilter === "All Bags" || item.bag === bagFilter;
         return matchesSearch && matchesFilter && matchesCategory && matchesBag;
@@ -449,15 +477,148 @@ export default function Home() {
     });
   };
 
-  const addQuickItem = (event: FormEvent, categoryId: string) => {
+  const addTopItem = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!quickName.trim()) return;
-    const itemName = quickName.trim();
-    requestConfirm(`Add "${itemName}" to this category?`, () => {
-      updateCategory(categoryId, (cat) => ({ ...cat, items: [...cat.items, defaultItem(itemName)] }));
-      setQuickName("");
-      setNewItemCategory(null);
+    const form = new FormData(event.currentTarget);
+    const itemName = String(form.get("itemName") ?? newItemName).trim();
+    if (!itemName) return;
+    const targetCategoryId = String(form.get("categoryId") ?? selectedNewItemCategoryId) || state.categories[0]?.id;
+    const targetCategory = state.categories.find((cat) => cat.id === targetCategoryId);
+    if (!targetCategory) {
+      showToast("Add a category before adding an item.");
+      return;
+    }
+    const priority = String(form.get("priority") ?? selectedNewItemPriority);
+    const bag = (String(form.get("bag") ?? newItemBag) || "Checked Bag 1") as Bag;
+    requestConfirm(`Add "${itemName}" to ${targetCategory.name}?`, () => {
+      updateCategory(targetCategory.id, (cat) => ({ ...cat, items: [...cat.items, defaultItem(itemName, priority, bag)] }));
+      setNewItemName("");
     }, { actionLabel: "Add item" });
+  };
+
+  const addPriority = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const priority = String(form.get("priorityName") ?? newPriorityName).trim();
+    if (!priority) return;
+    if (state.priorities.some((item) => item.toLowerCase() === priority.toLowerCase())) {
+      showToast("That priority already exists.");
+      return;
+    }
+    requestConfirm(`Add priority "${priority}"?`, () => {
+      setState((current) => ({ ...current, priorities: [...current.priorities, priority] }));
+      setNewPriorityName("");
+    }, { actionLabel: "Add priority" });
+  };
+
+  const renamePriority = (priority: Priority, nextName: string) => {
+    const cleanName = nextName.trim();
+    if (!cleanName || cleanName === priority) {
+      setRenamingPriority(null);
+      return;
+    }
+    if (state.priorities.some((item) => item !== priority && item.toLowerCase() === cleanName.toLowerCase())) {
+      showToast("That priority already exists.");
+      return;
+    }
+    requestConfirm(`Rename priority "${priority}" to "${cleanName}"?`, () => {
+      setState((current) => ({
+        ...current,
+        priorities: current.priorities.map((item) => (item === priority ? cleanName : item)),
+        categories: current.categories.map((cat) => ({
+          ...cat,
+          items: cat.items.map((item) => (item.priority === priority ? { ...item, priority: cleanName } : item)),
+        })),
+      }));
+      setRenamingPriority(null);
+      setRenamePriorityValue("");
+    }, { actionLabel: "Rename" });
+  };
+
+  const deletePriority = (priority: Priority) => {
+    if (state.priorities.length <= 1) {
+      showToast("Keep at least one priority.");
+      return;
+    }
+    const fallback = state.priorities.find((item) => item !== priority) ?? defaultPriorities[1];
+    requestConfirm(`Delete priority "${priority}"? Items using it will move to "${fallback}".`, () => {
+      setState((current) => ({
+        ...current,
+        priorities: current.priorities.filter((item) => item !== priority),
+        categories: current.categories.map((cat) => ({
+          ...cat,
+          items: cat.items.map((item) => (item.priority === priority ? { ...item, priority: fallback } : item)),
+        })),
+      }));
+    }, { title: "Delete priority", actionLabel: "Delete", tone: "danger" });
+  };
+
+  const updateTravelList = (listId: string, updater: (list: TravelList) => TravelList) => {
+    setState((current) => ({ ...current, travelLists: current.travelLists.map((list) => (list.id === listId ? updater(list) : list)) }));
+  };
+
+  const addTravelList = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const title = String(form.get("travelListTitle") ?? newTravelListTitle).trim();
+    if (!title) return;
+    const icon = String(form.get("travelListIcon") ?? newTravelListIcon).trim() || "✓";
+    requestConfirm(`Add travel section "${title}"?`, () => {
+      setState((current) => ({ ...current, travelLists: [...current.travelLists, { id: makeId("travel-list"), title, icon, items: [] }] }));
+      setNewTravelListTitle("");
+      setNewTravelListIcon("✓");
+    }, { actionLabel: "Add section" });
+  };
+
+  const addTravelItem = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const itemName = String(form.get("travelItemName") ?? newTravelItemName).trim();
+    const listId = String(form.get("travelListId") ?? selectedNewTravelListId) || state.travelLists[0]?.id;
+    const list = state.travelLists.find((travelList) => travelList.id === listId);
+    if (!itemName || !list) return;
+    requestConfirm(`Add "${itemName}" to ${list.title}?`, () => {
+      updateTravelList(list.id, (travelList) => ({ ...travelList, items: [...travelList.items, { id: makeId("travel"), name: itemName, done: false }] }));
+      setNewTravelItemName("");
+    }, { actionLabel: "Add item" });
+  };
+
+  const renameTravelListSubmit = (list: TravelList, nextTitle: string) => {
+    const title = nextTitle.trim();
+    if (!title || title === list.title) {
+      setRenamingTravelList(null);
+      return;
+    }
+    requestConfirm(`Rename "${list.title}" to "${title}"?`, () => {
+      updateTravelList(list.id, (travelList) => ({ ...travelList, title }));
+      setRenamingTravelList(null);
+      setTravelRenameValue("");
+    }, { actionLabel: "Rename" });
+  };
+
+  const deleteTravelList = (list: TravelList) => {
+    requestConfirm(`Delete "${list.title}" and all checks inside it?`, () => {
+      setState((current) => ({ ...current, travelLists: current.travelLists.filter((travelList) => travelList.id !== list.id) }));
+    }, { title: "Delete travel section", actionLabel: "Delete", tone: "danger" });
+  };
+
+  const renameTravelItemSubmit = (listId: string, item: TravelItem, nextName: string) => {
+    const name = nextName.trim();
+    if (!name || name === item.name) {
+      setRenamingTravelItem(null);
+      return;
+    }
+    requestConfirm(`Rename "${item.name}" to "${name}"?`, () => {
+      updateTravelList(listId, (list) => ({ ...list, items: list.items.map((travelItem) => (travelItem.id === item.id ? { ...travelItem, name } : travelItem)) }));
+      setRenamingTravelItem(null);
+      setTravelRenameValue("");
+    }, { actionLabel: "Rename" });
+  };
+
+  const deleteTravelItem = (listId: string, item: TravelItem) => {
+    requestConfirm(`Delete "${item.name}"?`, () => {
+      updateTravelList(listId, (list) => ({ ...list, items: list.items.filter((travelItem) => travelItem.id !== item.id) }));
+    }, { title: "Delete travel check", actionLabel: "Delete", tone: "danger" });
   };
 
   const exportBackup = () => {
@@ -714,15 +875,16 @@ export default function Home() {
             categories={state.categories}
             packed={packedCount}
             remaining={remainingCount}
-            essential={essentialRemaining}
+            urgent={urgentRemaining}
+            urgentLabel={urgentPriority}
             progress={progress}
             handReady={handReady}
             handTotal={handCore.length}
             onOpenChecklist={() => setTab("checklist")}
           />
-          <Stats total={allItems.length} packed={packedCount} remaining={remainingCount} essential={essentialRemaining} />
+          <Stats total={allItems.length} packed={packedCount} remaining={remainingCount} urgent={urgentRemaining} urgentLabel={urgentPriority} />
           <ProgressPanel categories={state.categories} total={allItems.length} packed={packedCount} progress={progress} />
-          <EssentialAlert items={essentialItems} />
+          <EssentialAlert items={urgentItems} priority={urgentPriority} />
           <SuggestionPanel
             suggestions={suggestions}
             dismiss={(idea) => requestConfirm(`Dismiss this suggestion: "${idea}"?`, () => setState((s) => ({ ...s, dismissedSuggestions: [...s.dismissedSuggestions, idea] })), { actionLabel: "Dismiss" })}
@@ -735,7 +897,10 @@ export default function Home() {
           <div className="toolbar panel">
             <input aria-label="Search packing items" placeholder="🔍 Search packing items..." value={query} onChange={(e) => setQuery(e.target.value)} />
             <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter by status">
-              {["All", "Remaining", "Packed", "Essential"].map((value) => <option key={value}>{value}</option>)}
+              {["All", "Remaining", "Packed"].map((value) => <option key={value}>{value}</option>)}
+              <optgroup label="Priority">
+                {state.priorities.map((priority) => <option key={priority} value={`priority:${priority}`}>{priority}</option>)}
+              </optgroup>
             </select>
             <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} aria-label="Filter by category">
               <option>All Categories</option>
@@ -747,24 +912,69 @@ export default function Home() {
             </select>
           </div>
 
-          <div className="actions-row">
-            <form className="new-category" onSubmit={(e) => {
+          <div className="manage-panel panel">
+            <form className="manage-form add-category-form" onSubmit={(e) => {
               e.preventDefault();
-              if (!newCategoryName.trim()) return;
-              const categoryName = newCategoryName.trim();
+              const form = new FormData(e.currentTarget);
+              const categoryName = String(form.get("categoryName") ?? newCategoryName).trim();
+              if (!categoryName) return;
               requestConfirm(`Add new category "${categoryName}"?`, () => {
                 setState((s) => ({ ...s, categories: [...s.categories, category(categoryName, "📦", [])] }));
                 setNewCategoryName("");
               }, { actionLabel: "Add category" });
             }}>
-              <input placeholder="New category name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} />
+              <span className="section-label">Category</span>
+              <input name="categoryName" placeholder="New category name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} />
               <button>Add Category</button>
             </form>
-            <button onClick={exportBackup}>Export Backup</button>
-            <button onClick={() => importRef.current?.click()}>Import Backup</button>
-            <button onClick={copyChecklist}>Share Checklist</button>
-            <button onClick={() => window.print()}>Print</button>
-            <button className="danger" onClick={resetAll}>Reset Checklist</button>
+
+            <form className="manage-form add-item-form" onSubmit={addTopItem}>
+              <span className="section-label">Item</span>
+              <input name="itemName" placeholder="New item name" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+              <select name="categoryId" value={selectedNewItemCategoryId} onChange={(e) => setNewItemCategoryId(e.target.value)} aria-label="Category for new item">
+                {state.categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+              </select>
+              <select name="priority" value={selectedNewItemPriority} onChange={(e) => setNewItemPriority(e.target.value)} aria-label="Priority for new item">
+                {state.priorities.map((priority) => <option key={priority}>{priority}</option>)}
+              </select>
+              <select name="bag" value={newItemBag} onChange={(e) => setNewItemBag(e.target.value as Bag)} aria-label="Bag for new item">
+                {bags.map((bag) => <option key={bag}>{bag}</option>)}
+              </select>
+              <button>Add Item</button>
+            </form>
+
+            <section className="priority-manager" aria-label="Priority settings">
+              <div className="manager-title">
+                <span className="section-label">Priority labels</span>
+                <form onSubmit={addPriority}>
+                  <input name="priorityName" placeholder="Add priority" value={newPriorityName} onChange={(e) => setNewPriorityName(e.target.value)} />
+                  <button>Add</button>
+                </form>
+              </div>
+              <div className="priority-list">
+                {state.priorities.map((priority) => (
+                  <div className="priority-chip" key={priority}>
+                    {renamingPriority === priority ? (
+                      <form className="chip-edit" onSubmit={(event) => {
+                        event.preventDefault();
+                        renamePriority(priority, renamePriorityValue);
+                      }}>
+                        <input value={renamePriorityValue} onChange={(event) => setRenamePriorityValue(event.target.value)} />
+                        <button>Save</button>
+                      </form>
+                    ) : (
+                      <>
+                        <span><PriorityDot priority={priority} /> {priority}</span>
+                        <div className="icon-actions">
+                          <button type="button" className="icon-button" aria-label={`Rename ${priority}`} title="Rename" onClick={() => { setRenamingPriority(priority); setRenamePriorityValue(priority); }}>✎</button>
+                          <button type="button" className="icon-button danger-icon" aria-label={`Delete ${priority}`} title="Delete" onClick={() => deletePriority(priority)}>🗑</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
             <input ref={importRef} type="file" accept="application/json" hidden onChange={importBackup} />
           </div>
 
@@ -774,20 +984,22 @@ export default function Home() {
                 <button className="collapse" onClick={() => updateCategory(cat.id, (c) => ({ ...c, collapsed: !c.collapsed }))}>{cat.collapsed ? "＋" : "−"}</button>
                 <h2>{cat.icon} {cat.name}</h2>
                 <span>{cat.items.filter((item) => item.status === "Packed").length}/{cat.items.length}</span>
-                <button title="Move category up" disabled={catIndex === 0} onClick={() => requestConfirm(`Move "${cat.name}" up?`, () => setState((s) => {
+                <button className="move-button" title="Move category up" disabled={catIndex === 0} onClick={() => requestConfirm(`Move "${cat.name}" up?`, () => setState((s) => {
                   const next = [...s.categories];
                   const realIndex = next.findIndex((c) => c.id === cat.id);
                   if (realIndex > 0) [next[realIndex - 1], next[realIndex]] = [next[realIndex], next[realIndex - 1]];
                   return { ...s, categories: next };
                 }), { actionLabel: "Move" })}>↑</button>
-                <button title="Move category down" disabled={catIndex === filteredCategories.length - 1} onClick={() => requestConfirm(`Move "${cat.name}" down?`, () => setState((s) => {
+                <button className="move-button" title="Move category down" disabled={catIndex === filteredCategories.length - 1} onClick={() => requestConfirm(`Move "${cat.name}" down?`, () => setState((s) => {
                   const next = [...s.categories];
                   const realIndex = next.findIndex((c) => c.id === cat.id);
                   if (realIndex < next.length - 1) [next[realIndex + 1], next[realIndex]] = [next[realIndex], next[realIndex + 1]];
                   return { ...s, categories: next };
                 }), { actionLabel: "Move" })}>↓</button>
+                <button type="button" className="icon-button" aria-label={`Rename ${cat.name}`} title="Rename category" onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>✎</button>
+                <button type="button" className="icon-button danger-icon" aria-label={`Delete ${cat.name}`} title="Delete category" onClick={() => requestConfirm(`Delete "${cat.name}" and all items inside it?`, () => setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) })), { title: "Delete category", actionLabel: "Delete", tone: "danger" })}>🗑</button>
               </div>
-              {renamingCategory === cat.id ? (
+              {renamingCategory === cat.id && (
                 <form className="inline-form" onSubmit={(e) => {
                   e.preventDefault();
                   const nextName = renameValue.trim() || cat.name;
@@ -798,18 +1010,6 @@ export default function Home() {
                 }}>
                   <input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} />
                   <button>Save</button>
-                </form>
-              ) : (
-                <div className="category-actions">
-                  <button onClick={() => setNewItemCategory(cat.id)}>Add item</button>
-                  <button onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>Rename</button>
-                  <button className="danger" onClick={() => requestConfirm(`Delete "${cat.name}" and all items inside it?`, () => setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) })), { title: "Delete category", actionLabel: "Delete", tone: "danger" })}>Delete</button>
-                </div>
-              )}
-              {newItemCategory === cat.id && (
-                <form className="quick-add" onSubmit={(e) => addQuickItem(e, cat.id)}>
-                  <input autoFocus placeholder="Item name" value={quickName} onChange={(e) => setQuickName(e.target.value)} />
-                  <button>Add</button>
                 </form>
               )}
               {!cat.collapsed && (
@@ -836,6 +1036,20 @@ export default function Home() {
               )}
             </article>
           ))}
+
+          <div className="bottom-tools panel">
+            <div>
+              <span className="section-label">Backup</span>
+              <h2>Checklist tools</h2>
+            </div>
+            <div className="backup-actions">
+              <button onClick={exportBackup}>Export Backup</button>
+              <button onClick={() => importRef.current?.click()}>Import Backup</button>
+              <button onClick={copyChecklist}>Share Checklist</button>
+              <button onClick={() => window.print()}>Print</button>
+              <button className="danger" onClick={resetAll}>Reset Checklist</button>
+            </div>
+          </div>
         </section>
       )}
 
@@ -863,19 +1077,76 @@ export default function Home() {
       )}
 
       {tab === "travel" && (
-        <section className="travel-grid">
-          {state.travelLists.map((list) => (
-            <article className="panel travel-list" key={list.id}>
-              <h2>{list.icon} {list.title}</h2>
-              <p className="muted">{list.items.filter((item) => item.done).length} / {list.items.length} ready</p>
-              {list.items.map((item) => (
-                <label className={`travel-item ${item.done ? "done" : ""}`} key={item.id}>
-                  <input type="checkbox" checked={item.done} onChange={() => requestConfirm(`Mark "${item.name}" as ${item.done ? "not ready" : "ready"}?`, () => setState((s) => ({ ...s, travelLists: s.travelLists.map((tl) => tl.id === list.id ? { ...tl, items: tl.items.map((x) => x.id === item.id ? { ...x, done: !x.done } : x) } : tl) })), { actionLabel: "Update" })} />
-                  <span>{item.name}</span>
-                </label>
-              ))}
-            </article>
-          ))}
+        <section className="stack">
+          <div className="travel-tools panel">
+            <form className="manage-form travel-section-form" onSubmit={addTravelList}>
+              <span className="section-label">Travel section</span>
+              <input name="travelListIcon" aria-label="Travel section icon" value={newTravelListIcon} onChange={(e) => setNewTravelListIcon(e.target.value)} />
+              <input name="travelListTitle" placeholder="New travel section" value={newTravelListTitle} onChange={(e) => setNewTravelListTitle(e.target.value)} />
+              <button>Add Section</button>
+            </form>
+            <form className="manage-form travel-item-form" onSubmit={addTravelItem}>
+              <span className="section-label">Travel check</span>
+              <input name="travelItemName" placeholder="New travel check" value={newTravelItemName} onChange={(e) => setNewTravelItemName(e.target.value)} />
+              <select name="travelListId" value={selectedNewTravelListId} onChange={(e) => setNewTravelListId(e.target.value)} aria-label="Travel section for new check">
+                {state.travelLists.map((list) => <option key={list.id} value={list.id}>{list.title}</option>)}
+              </select>
+              <button>Add Check</button>
+            </form>
+          </div>
+
+          <section className="travel-grid">
+            {state.travelLists.map((list) => (
+              <article className="panel travel-list" key={list.id}>
+                <div className="travel-list-head">
+                  {renamingTravelList === list.id ? (
+                    <form className="inline-form travel-rename" onSubmit={(event) => {
+                      event.preventDefault();
+                      renameTravelListSubmit(list, travelRenameValue);
+                    }}>
+                      <input value={travelRenameValue} onChange={(event) => setTravelRenameValue(event.target.value)} />
+                      <button>Save</button>
+                    </form>
+                  ) : (
+                    <>
+                      <div>
+                        <h2>{list.icon} {list.title}</h2>
+                        <p className="muted">{list.items.filter((item) => item.done).length} / {list.items.length} ready</p>
+                      </div>
+                      <div className="icon-actions">
+                        <button type="button" className="icon-button" aria-label={`Rename ${list.title}`} title="Rename" onClick={() => { setRenamingTravelList(list.id); setTravelRenameValue(list.title); }}>✎</button>
+                        <button type="button" className="icon-button danger-icon" aria-label={`Delete ${list.title}`} title="Delete" onClick={() => deleteTravelList(list)}>🗑</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {list.items.map((item) => (
+                  <div className={`travel-item ${item.done ? "done" : ""}`} key={item.id}>
+                    {renamingTravelItem?.listId === list.id && renamingTravelItem.itemId === item.id ? (
+                      <form className="inline-form travel-rename" onSubmit={(event) => {
+                        event.preventDefault();
+                        renameTravelItemSubmit(list.id, item, travelRenameValue);
+                      }}>
+                        <input value={travelRenameValue} onChange={(event) => setTravelRenameValue(event.target.value)} />
+                        <button>Save</button>
+                      </form>
+                    ) : (
+                      <>
+                        <label className="travel-check">
+                          <input type="checkbox" checked={item.done} onChange={() => requestConfirm(`Mark "${item.name}" as ${item.done ? "not ready" : "ready"}?`, () => setState((s) => ({ ...s, travelLists: s.travelLists.map((tl) => tl.id === list.id ? { ...tl, items: tl.items.map((x) => x.id === item.id ? { ...x, done: !x.done } : x) } : tl) })), { actionLabel: "Update" })} />
+                          <span>{item.name}</span>
+                        </label>
+                        <div className="travel-item-actions">
+                          <button type="button" className="icon-button" aria-label={`Rename ${item.name}`} title="Rename" onClick={() => { setRenamingTravelItem({ listId: list.id, itemId: item.id }); setTravelRenameValue(item.name); }}>✎</button>
+                          <button type="button" className="icon-button danger-icon" aria-label={`Delete ${item.name}`} title="Delete" onClick={() => deleteTravelItem(list.id, item)}>🗑</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </article>
+            ))}
+          </section>
         </section>
       )}
 
@@ -908,6 +1179,7 @@ export default function Home() {
         <EditSheet
           item={editing.item}
           categories={state.categories}
+          priorities={state.priorities}
           currentCategoryId={editing.categoryId}
           onClose={() => setEditing(null)}
           onSave={(item, targetCategoryId) => {
@@ -948,14 +1220,14 @@ export default function Home() {
   );
 }
 
-function Stats({ total, packed, remaining, essential }: { total: number; packed: number; remaining: number; essential: number }) {
+function Stats({ total, packed, remaining, urgent, urgentLabel }: { total: number; packed: number; remaining: number; urgent: number; urgentLabel: string }) {
   return (
     <div className="stats">
       {[
         ["Total Items", total],
         ["Packed", packed],
         ["Remaining", remaining],
-        ["Essential Remaining", essential],
+        [`${urgentLabel} Remaining`, urgent],
       ].map(([label, value]) => <div className="stat panel" key={label}><span>{label}</span><strong>{value}</strong></div>)}
     </div>
   );
@@ -1053,11 +1325,11 @@ function ProgressPanel({ categories, total, packed, progress }: { categories: Ca
   );
 }
 
-function EssentialAlert({ items }: { items: (Item & { categoryName: string })[] }) {
+function EssentialAlert({ items, priority }: { items: (Item & { categoryName: string })[]; priority: string }) {
   return (
     <section className="panel alert">
-      <h2>🚨 Essential Items Still Not Packed</h2>
-      {items.length ? items.slice(0, 10).map((item) => <p key={item.id}>⚠ {item.name}</p>) : <p className="all-good">✅ All essential items are packed!</p>}
+      <h2>🚨 {priority} Items Still Not Packed</h2>
+      {items.length ? items.slice(0, 10).map((item) => <p key={item.id}>⚠ {item.name}</p>) : <p className="all-good">✅ All {priority.toLowerCase()} items are packed!</p>}
     </section>
   );
 }
@@ -1076,7 +1348,8 @@ function PackingAssistant({
   categories,
   packed,
   remaining,
-  essential,
+  urgent,
+  urgentLabel,
   progress,
   handReady,
   handTotal,
@@ -1086,7 +1359,8 @@ function PackingAssistant({
   categories: Category[];
   packed: number;
   remaining: number;
-  essential: number;
+  urgent: number;
+  urgentLabel: string;
   progress: number;
   handReady: number;
   handTotal: number;
@@ -1095,7 +1369,7 @@ function PackingAssistant({
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("Ask me what is left, what is urgent, what goes in hand luggage, or what Twinkle should pack next.");
   const remainingItems = items.filter((item) => item.status !== "Packed");
-  const essentialItems = remainingItems.filter((item) => item.priority === "Essential");
+  const urgentItems = remainingItems.filter((item) => item.priority === urgentLabel);
   const topCategory = categories
     .map((cat) => ({ name: cat.name, icon: cat.icon, left: cat.items.filter((item) => item.status !== "Packed").length }))
     .sort((a, b) => b.left - a.left)[0];
@@ -1137,7 +1411,7 @@ function PackingAssistant({
     }
 
     if (lower.includes("essential") || lower.includes("urgent") || lower.includes("important")) {
-      setAnswer(essentialItems.length ? `Most urgent: ${formatItems(essentialItems)}. Finish essentials before clothes or extras.` : "All essential items are packed. Nice. Next, check important documents, chargers, medicines, and luggage weight.");
+      setAnswer(urgentItems.length ? `Most urgent: ${formatItems(urgentItems)}. Finish ${urgentLabel.toLowerCase()} items before clothes or extras.` : `All ${urgentLabel.toLowerCase()} items are packed. Nice. Next, check documents, chargers, medicines, and luggage weight.`);
       return;
     }
 
@@ -1147,12 +1421,12 @@ function PackingAssistant({
     }
 
     if (lower.includes("next") || lower.includes("start")) {
-      const next = essentialItems[0] ?? remainingItems[0];
+      const next = urgentItems[0] ?? remainingItems[0];
       setAnswer(next ? `Pack next: ${next.name}. It is ${next.priority.toLowerCase()} and belongs in ${next.bag}.` : "Everything is packed. Do one final travel-day check and keep documents in hand luggage.");
       return;
     }
 
-    setAnswer(`I checked the live checklist, but I could not find a specific item from that question. Try asking "where is passport?", "what is left in hand luggage?", "what should I pack next?", or "what is urgent?". Best focus now: ${essential ? `${essential} essential items` : `${remaining} remaining items`} and ${handTotal - handReady} hand-luggage core items left.`);
+    setAnswer(`I checked the live checklist, but I could not find a specific item from that question. Try asking "where is passport?", "what is left in hand luggage?", "what should I pack next?", or "what is urgent?". Best focus now: ${urgent ? `${urgent} ${urgentLabel.toLowerCase()} items` : `${remaining} remaining items`} and ${handTotal - handReady} hand-luggage core items left.`);
   };
 
   return (
@@ -1179,7 +1453,7 @@ function PackingAssistant({
       </div>
       <div className="ai-summary-grid">
         <span><b>{progress}%</b><small>packed</small></span>
-        <span><b>{essential}</b><small>essentials left</small></span>
+        <span><b>{urgent}</b><small>{urgentLabel.toLowerCase()} left</small></span>
         <span><b>{handReady}/{handTotal}</b><small>hand luggage</small></span>
       </div>
       <button className="ai-link" onClick={onOpenChecklist}>Open full checklist</button>
@@ -1222,9 +1496,10 @@ function ItemRow({ item, categories, onToggle, onEdit, onDelete, onMoveCategory,
   );
 }
 
-function EditSheet({ item, categories, currentCategoryId, onClose, onSave }: {
+function EditSheet({ item, categories, priorities, currentCategoryId, onClose, onSave }: {
   item: Item;
   categories: Category[];
+  priorities: Priority[];
   currentCategoryId: string;
   onClose: () => void;
   onSave: (item: Item, categoryId: string) => void;
@@ -1237,7 +1512,7 @@ function EditSheet({ item, categories, currentCategoryId, onClose, onSave }: {
         <div className="sheet-head"><h2>Edit Item</h2><button type="button" onClick={onClose}>×</button></div>
         <label>Item Name<input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
         <label>Quantity<div className="stepper"><button type="button" onClick={() => setDraft({ ...draft, qty: Math.max(1, draft.qty - 1) })}>−</button><strong>{draft.qty}</strong><button type="button" onClick={() => setDraft({ ...draft, qty: draft.qty + 1 })}>＋</button></div></label>
-        <label>Priority<select value={draft.priority} onChange={(e) => setDraft({ ...draft, priority: e.target.value as Priority })}>{priorities.map((value) => <option key={value}>{value}</option>)}</select></label>
+        <label>Priority<select value={draft.priority} onChange={(e) => setDraft({ ...draft, priority: e.target.value })}>{priorities.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Bag Location<select value={draft.bag} onChange={(e) => setDraft({ ...draft, bag: e.target.value as Bag })}>{bags.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Status<select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as Status })}>{statuses.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Packing plan<select value={draft.source} onChange={(e) => setDraft({ ...draft, source: e.target.value as Source })}>{sources.map((value) => <option key={value}>{value}</option>)}</select></label>
@@ -1299,7 +1574,8 @@ function MiniItem({ item, extra, onBag }: { item: Item; extra: string; onBag: (b
 }
 
 function PriorityDot({ priority }: { priority: Priority }) {
-  return <i className={`dot ${priority.toLowerCase()}`} aria-hidden="true" />;
+  const className = priority.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "custom";
+  return <i className={`dot ${className}`} aria-hidden="true" />;
 }
 
 function bagIcon(bag: Bag) {
