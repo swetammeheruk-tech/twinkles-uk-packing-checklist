@@ -307,6 +307,8 @@ export default function Home() {
   const [addingItem, setAddingItem] = useState(false);
   const [addingCategory, setAddingCategory] = useState(false);
   const [managingPriorities, setManagingPriorities] = useState(false);
+  const [checklistEditMode, setChecklistEditMode] = useState(false);
+  const [travelEditMode, setTravelEditMode] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemCategoryId, setNewItemCategoryId] = useState("");
   const [newItemPriority, setNewItemPriority] = useState(defaultPriorities[1]);
@@ -348,6 +350,27 @@ export default function Home() {
       actionLabel: options.actionLabel ?? "Confirm",
       tone: options.tone ?? "default",
       onConfirm,
+    });
+  };
+
+  const toggleChecklistEditMode = () => {
+    setChecklistEditMode((current) => {
+      if (current) {
+        setRenamingCategory(null);
+        setRenameValue("");
+      }
+      return !current;
+    });
+  };
+
+  const toggleTravelEditMode = () => {
+    setTravelEditMode((current) => {
+      if (current) {
+        setRenamingTravelList(null);
+        setRenamingTravelItem(null);
+        setTravelRenameValue("");
+      }
+      return !current;
     });
   };
 
@@ -944,28 +967,34 @@ export default function Home() {
             <input ref={importRef} type="file" accept="application/json" hidden onChange={importBackup} />
           </div>
 
+          <ModeStrip label="Checklist" active={checklistEditMode} onToggle={toggleChecklistEditMode} />
+
           {filteredCategories.map((cat, catIndex) => (
-            <article className="category panel" key={cat.id}>
+            <article className={`category panel ${checklistEditMode ? "editing-mode" : ""}`} key={cat.id}>
               <div className="category-head">
                 <button className="collapse" onClick={() => updateCategory(cat.id, (c) => ({ ...c, collapsed: !c.collapsed }))}>{cat.collapsed ? "＋" : "−"}</button>
                 <h2>{cat.icon} {cat.name}</h2>
                 <span>{cat.items.filter((item) => item.status === "Packed").length}/{cat.items.length}</span>
-                <button className="move-button" title="Move category up" disabled={catIndex === 0} onClick={() => requestConfirm(`Move "${cat.name}" up?`, () => setState((s) => {
-                  const next = [...s.categories];
-                  const realIndex = next.findIndex((c) => c.id === cat.id);
-                  if (realIndex > 0) [next[realIndex - 1], next[realIndex]] = [next[realIndex], next[realIndex - 1]];
-                  return { ...s, categories: next };
-                }), { actionLabel: "Move" })}>↑</button>
-                <button className="move-button" title="Move category down" disabled={catIndex === filteredCategories.length - 1} onClick={() => requestConfirm(`Move "${cat.name}" down?`, () => setState((s) => {
-                  const next = [...s.categories];
-                  const realIndex = next.findIndex((c) => c.id === cat.id);
-                  if (realIndex < next.length - 1) [next[realIndex + 1], next[realIndex]] = [next[realIndex], next[realIndex + 1]];
-                  return { ...s, categories: next };
-                }), { actionLabel: "Move" })}>↓</button>
-                <button type="button" className="icon-button" aria-label={`Rename ${cat.name}`} title="Rename category" onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>✎</button>
-                <button type="button" className="icon-button danger-icon" aria-label={`Delete ${cat.name}`} title="Delete category" onClick={() => requestConfirm(`Delete "${cat.name}" and all items inside it?`, () => setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) })), { title: "Delete category", actionLabel: "Delete", tone: "danger" })}>🗑</button>
+                {checklistEditMode && (
+                  <>
+                    <button className="move-button" title="Move category up" disabled={catIndex === 0} onClick={() => requestConfirm(`Move "${cat.name}" up?`, () => setState((s) => {
+                      const next = [...s.categories];
+                      const realIndex = next.findIndex((c) => c.id === cat.id);
+                      if (realIndex > 0) [next[realIndex - 1], next[realIndex]] = [next[realIndex], next[realIndex - 1]];
+                      return { ...s, categories: next };
+                    }), { actionLabel: "Move" })}>↑</button>
+                    <button className="move-button" title="Move category down" disabled={catIndex === filteredCategories.length - 1} onClick={() => requestConfirm(`Move "${cat.name}" down?`, () => setState((s) => {
+                      const next = [...s.categories];
+                      const realIndex = next.findIndex((c) => c.id === cat.id);
+                      if (realIndex < next.length - 1) [next[realIndex + 1], next[realIndex]] = [next[realIndex], next[realIndex + 1]];
+                      return { ...s, categories: next };
+                    }), { actionLabel: "Move" })}>↓</button>
+                    <button type="button" className="icon-button" aria-label={`Rename ${cat.name}`} title="Rename category" onClick={() => { setRenamingCategory(cat.id); setRenameValue(cat.name); }}>✎</button>
+                    <button type="button" className="icon-button danger-icon" aria-label={`Delete ${cat.name}`} title="Delete category" onClick={() => requestConfirm(`Delete "${cat.name}" and all items inside it?`, () => setState((s) => ({ ...s, categories: s.categories.filter((c) => c.id !== cat.id) })), { title: "Delete category", actionLabel: "Delete", tone: "danger" })}>🗑</button>
+                  </>
+                )}
               </div>
-              {renamingCategory === cat.id && (
+              {checklistEditMode && renamingCategory === cat.id && (
                 <form className="inline-form" onSubmit={(e) => {
                   e.preventDefault();
                   const nextName = renameValue.trim() || cat.name;
@@ -990,6 +1019,7 @@ export default function Home() {
                       onDelete={() => requestConfirm(`Delete "${item.name}"?`, () => updateCategory(cat.id, (c) => ({ ...c, items: c.items.filter((x) => x.id !== item.id) })), { title: "Delete item", actionLabel: "Delete", tone: "danger" })}
                       onMoveCategory={(target) => requestConfirm(`Move "${item.name}" to another category?`, () => moveItem(cat.id, item.id, target), { actionLabel: "Move" })}
                       onMoveBag={(bag) => requestConfirm(`Move "${item.name}" to ${bag}?`, () => updateItem(cat.id, item.id, { bag }), { actionLabel: "Move" })}
+                      editMode={checklistEditMode}
                       onReorder={(direction) => requestConfirm(`Move "${item.name}" ${direction < 0 ? "up" : "down"}?`, () => updateCategory(cat.id, (c) => {
                         const next = [...c.items];
                         const target = itemIndex + direction;
@@ -1061,11 +1091,13 @@ export default function Home() {
             </form>
           </div>
 
+          <ModeStrip label="Travel" active={travelEditMode} onToggle={toggleTravelEditMode} />
+
           <section className="travel-grid">
             {state.travelLists.map((list) => (
-              <article className="panel travel-list" key={list.id}>
+              <article className={`panel travel-list ${travelEditMode ? "editing-mode" : ""}`} key={list.id}>
                 <div className="travel-list-head">
-                  {renamingTravelList === list.id ? (
+                  {travelEditMode && renamingTravelList === list.id ? (
                     <form className="inline-form travel-rename" onSubmit={(event) => {
                       event.preventDefault();
                       renameTravelListSubmit(list, travelRenameValue);
@@ -1079,16 +1111,18 @@ export default function Home() {
                         <h2>{list.icon} {list.title}</h2>
                         <p className="muted">{list.items.filter((item) => item.done).length} / {list.items.length} ready</p>
                       </div>
-                      <div className="icon-actions">
-                        <button type="button" className="icon-button" aria-label={`Rename ${list.title}`} title="Rename" onClick={() => { setRenamingTravelList(list.id); setTravelRenameValue(list.title); }}>✎</button>
-                        <button type="button" className="icon-button danger-icon" aria-label={`Delete ${list.title}`} title="Delete" onClick={() => deleteTravelList(list)}>🗑</button>
-                      </div>
+                      {travelEditMode && (
+                        <div className="icon-actions">
+                          <button type="button" className="icon-button" aria-label={`Rename ${list.title}`} title="Rename" onClick={() => { setRenamingTravelList(list.id); setTravelRenameValue(list.title); }}>✎</button>
+                          <button type="button" className="icon-button danger-icon" aria-label={`Delete ${list.title}`} title="Delete" onClick={() => deleteTravelList(list)}>🗑</button>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
                 {list.items.map((item) => (
                   <div className={`travel-item ${item.done ? "done" : ""}`} key={item.id}>
-                    {renamingTravelItem?.listId === list.id && renamingTravelItem.itemId === item.id ? (
+                    {travelEditMode && renamingTravelItem?.listId === list.id && renamingTravelItem.itemId === item.id ? (
                       <form className="inline-form travel-rename" onSubmit={(event) => {
                         event.preventDefault();
                         renameTravelItemSubmit(list.id, item, travelRenameValue);
@@ -1102,10 +1136,12 @@ export default function Home() {
                           <input type="checkbox" checked={item.done} onChange={() => requestConfirm(`Mark "${item.name}" as ${item.done ? "not ready" : "ready"}?`, () => setState((s) => ({ ...s, travelLists: s.travelLists.map((tl) => tl.id === list.id ? { ...tl, items: tl.items.map((x) => x.id === item.id ? { ...x, done: !x.done } : x) } : tl) })), { actionLabel: "Update" })} />
                           <span>{item.name}</span>
                         </label>
-                        <div className="travel-item-actions">
-                          <button type="button" className="icon-button" aria-label={`Rename ${item.name}`} title="Rename" onClick={() => { setRenamingTravelItem({ listId: list.id, itemId: item.id }); setTravelRenameValue(item.name); }}>✎</button>
-                          <button type="button" className="icon-button danger-icon" aria-label={`Delete ${item.name}`} title="Delete" onClick={() => deleteTravelItem(list.id, item)}>🗑</button>
-                        </div>
+                        {travelEditMode && (
+                          <div className="travel-item-actions">
+                            <button type="button" className="icon-button" aria-label={`Rename ${item.name}`} title="Rename" onClick={() => { setRenamingTravelItem({ listId: list.id, itemId: item.id }); setTravelRenameValue(item.name); }}>✎</button>
+                            <button type="button" className="icon-button danger-icon" aria-label={`Delete ${item.name}`} title="Delete" onClick={() => deleteTravelItem(list.id, item)}>🗑</button>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -1237,6 +1273,20 @@ function Stats({ total, packed, remaining, urgent, urgentLabel }: { total: numbe
         ["Remaining", remaining],
         [`${urgentLabel} Remaining`, urgent],
       ].map(([label, value]) => <div className="stat panel" key={label}><span>{label}</span><strong>{value}</strong></div>)}
+    </div>
+  );
+}
+
+function ModeStrip({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
+  return (
+    <div className={`mode-strip panel ${active ? "active" : ""}`}>
+      <span>
+        <strong>{label}</strong>
+        <small>{active ? "Editing" : "Clean view"}</small>
+      </span>
+      <button type="button" className={active ? "primary" : ""} aria-pressed={active} onClick={onToggle}>
+        {active ? "Done" : "Edit / Delete"}
+      </button>
     </div>
   );
 }
@@ -1469,9 +1519,10 @@ function PackingAssistant({
   );
 }
 
-function ItemRow({ item, categories, onToggle, onEdit, onDelete, onMoveCategory, onMoveBag, onReorder }: {
+function ItemRow({ item, categories, editMode, onToggle, onEdit, onDelete, onMoveCategory, onMoveBag, onReorder }: {
   item: Item;
   categories: Category[];
+  editMode: boolean;
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -1480,26 +1531,28 @@ function ItemRow({ item, categories, onToggle, onEdit, onDelete, onMoveCategory,
   onReorder: (direction: number) => void;
 }) {
   return (
-    <div className={`item-row ${item.status === "Packed" ? "packed" : ""}`}>
+    <div className={`item-row ${item.status === "Packed" ? "packed" : ""} ${editMode ? "manage-open" : ""}`}>
       <button className="check" aria-label={item.status === "Packed" ? "Mark not packed" : "Mark packed"} onClick={onToggle}>{item.status === "Packed" ? "✓" : ""}</button>
       <div className="item-main">
         <strong>{item.name}</strong>
         <span><PriorityDot priority={item.priority} /> {item.priority} · Qty {item.qty} · {bagIcon(item.bag)} {item.bag} · {item.status}</span>
         {item.notes && <small>{item.notes}</small>}
       </div>
-      <div className="row-actions">
-        <button onClick={() => onReorder(-1)} title="Move up">↑</button>
-        <button onClick={() => onReorder(1)} title="Move down">↓</button>
-        <select value="" aria-label="Move to category" onChange={(e) => e.target.value && onMoveCategory(e.target.value)}>
-          <option value="">Category</option>
-          {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-        </select>
-        <select value={item.bag} aria-label="Move to bag" onChange={(e) => onMoveBag(e.target.value as Bag)}>
-          {bags.map((bag) => <option key={bag}>{bag}</option>)}
-        </select>
-        <button onClick={onEdit}>Edit</button>
-        <button className="danger" onClick={onDelete}>Delete</button>
-      </div>
+      {editMode && (
+        <div className="row-actions">
+          <button onClick={() => onReorder(-1)} title="Move up">↑</button>
+          <button onClick={() => onReorder(1)} title="Move down">↓</button>
+          <select value="" aria-label="Move to category" onChange={(e) => e.target.value && onMoveCategory(e.target.value)}>
+            <option value="">Category</option>
+            {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+          </select>
+          <select value={item.bag} aria-label="Move to bag" onChange={(e) => onMoveBag(e.target.value as Bag)}>
+            {bags.map((bag) => <option key={bag}>{bag}</option>)}
+          </select>
+          <button onClick={onEdit}>Edit</button>
+          <button className="danger" onClick={onDelete}>Delete</button>
+        </div>
+      )}
     </div>
   );
 }

@@ -746,6 +746,46 @@ button.save-pill {
   white-space: nowrap;
 }
 
+.mode-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(248,252,255,0.9)),
+    rgba(255,255,255,0.78);
+}
+
+.mode-strip.active {
+  border-color: rgba(31, 90, 166, 0.24);
+  background:
+    linear-gradient(135deg, rgba(233,242,255,0.94), rgba(255,255,255,0.94)),
+    rgba(255,255,255,0.86);
+}
+
+.mode-strip span {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.mode-strip strong {
+  font-size: 0.92rem;
+}
+
+.mode-strip small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.mode-strip button {
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
 .manage-form {
   display: grid;
   gap: 8px;
@@ -863,7 +903,7 @@ button.save-pill {
 
 .category-head {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   padding: 12px;
@@ -871,6 +911,10 @@ button.save-pill {
   background:
     linear-gradient(90deg, rgba(31, 90, 166, 0.1), rgba(23, 131, 69, 0.05)),
     #fbfdff;
+}
+
+.category.editing-mode .category-head {
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto auto;
 }
 
 .category-head h2 {
@@ -918,7 +962,7 @@ button.save-pill {
 
 .item-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   border: 1px solid var(--line);
@@ -926,6 +970,10 @@ button.save-pill {
   padding: 12px;
   background: linear-gradient(180deg, #fff, #fbfdff);
   transition: border 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.item-row.manage-open {
+  grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
 .item-row:hover {
@@ -1069,11 +1117,15 @@ button.save-pill {
 
 .travel-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   align-items: center;
   border-top: 1px solid var(--line);
   padding: 10px 0;
+}
+
+.travel-list.editing-mode .travel-item {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .travel-list-head {
@@ -1636,6 +1688,24 @@ button.save-pill {
     font-size: 0.72rem;
   }
 
+  .mode-strip {
+    padding: 7px 8px;
+  }
+
+  .mode-strip strong {
+    font-size: 0.82rem;
+  }
+
+  .mode-strip small {
+    font-size: 0.66rem;
+  }
+
+  .mode-strip button {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.74rem;
+  }
+
   .add-category-form,
   .travel-section-form,
   .travel-item-form {
@@ -1687,8 +1757,12 @@ button.save-pill {
   }
 
   .category-head {
-    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     padding: 5px 7px;
+  }
+
+  .category.editing-mode .category-head {
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   }
 
   .category {
@@ -1920,6 +1994,7 @@ button.save-pill {
 	  .toolbar,
 	  .actions-row,
 	  .manage-panel,
+	  .mode-strip,
 	  .bottom-tools,
 	  .travel-tools,
 	  .category-actions,
