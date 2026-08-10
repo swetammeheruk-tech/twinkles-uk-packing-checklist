@@ -1,24 +1,36 @@
 :root {
-  --bg: #f5f7fb;
-  --paper: #ffffff;
-  --paper-soft: #f8fbff;
-  --ink: #172033;
-  --muted: #667085;
-  --line: #dce4ee;
-  --blue: #1f5aa6;
-  --blue-dark: #173f75;
-  --blue-soft: #e9f2ff;
-  --green: #178345;
-  --green-soft: #e9f8ef;
-  --red: #b42335;
-  --red-soft: #fee9e8;
-  --amber: #b86b00;
-  --coral: #df476d;
-  --violet: #6d4fd7;
-  --sun: #f4b740;
-  --teal: #0f9f9a;
-  --shadow: 0 12px 30px rgba(18, 33, 61, 0.09);
-  --shadow-soft: 0 6px 18px rgba(18, 33, 61, 0.07);
+  --bg: #eef1f7;
+  --paper: rgba(255, 255, 255, 0.6);
+  --paper-soft: rgba(255, 255, 255, 0.42);
+  --ink: #1d1d1f;
+  --muted: rgba(60, 60, 67, 0.62);
+  --line: rgba(255, 255, 255, 0.55);
+  --hairline: rgba(60, 60, 67, 0.13);
+  --blue: #0a84ff;
+  --blue-dark: #0040dd;
+  --blue-soft: rgba(10, 132, 255, 0.14);
+  --green: #30d158;
+  --green-soft: rgba(48, 209, 88, 0.15);
+  --red: #ff3b30;
+  --red-soft: rgba(255, 59, 48, 0.12);
+  --amber: #ff9f0a;
+  --coral: #ff375f;
+  --violet: #bf5af2;
+  --sun: #ffd60a;
+  --teal: #40c8e4;
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-strong: rgba(255, 255, 255, 0.74);
+  --glass-weak: rgba(255, 255, 255, 0.34);
+  --blur: blur(24px) saturate(180%);
+  --blur-sm: blur(16px) saturate(160%);
+  --shadow: 0 24px 64px rgba(30, 41, 74, 0.16), 0 2px 6px rgba(30, 41, 74, 0.06);
+  --shadow-soft: 0 10px 32px rgba(30, 41, 74, 0.1), 0 1px 3px rgba(30, 41, 74, 0.05);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  --radius: 22px;
+  --radius-lg: 28px;
+  --radius-sm: 14px;
+  --radius-xs: 10px;
+  --radius-pill: 999px;
 }
 
 * {
@@ -27,14 +39,20 @@
 
 body {
   margin: 0;
+  min-height: 100vh;
   color: var(--ink);
-  background:
-    radial-gradient(circle at 10% 0, rgba(31, 90, 166, 0.16), transparent 26rem),
-    radial-gradient(circle at 92% 4rem, rgba(223, 71, 109, 0.11), transparent 22rem),
-    radial-gradient(circle at 38% 18rem, rgba(15, 159, 154, 0.09), transparent 21rem),
-    linear-gradient(180deg, #fbfdff 0, var(--bg) 22rem);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(38rem 30rem at 6% -8%, rgba(10, 132, 255, 0.32), transparent 60%),
+    radial-gradient(34rem 28rem at 98% 2%, rgba(255, 55, 95, 0.24), transparent 60%),
+    radial-gradient(30rem 26rem at 26% 96%, rgba(64, 200, 228, 0.28), transparent 60%),
+    radial-gradient(32rem 28rem at 86% 90%, rgba(191, 90, 242, 0.22), transparent 60%),
+    linear-gradient(180deg, #f5f7fc 0%, #eef1f7 40%, #eaeefb 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, ui-sans-serif, system-ui, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
 }
 
 button,
@@ -49,27 +67,30 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   padding: 0 14px;
-  background: #eef3f8;
+  background: var(--glass-weak);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
   color: var(--blue);
-  font-weight: 750;
+  font-weight: 600;
   cursor: pointer;
   outline: none;
-  transition: background 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  box-shadow: var(--shadow-inset);
+  transition: background 200ms ease, color 200ms ease, transform 150ms cubic-bezier(.2, .8, .2, 1), box-shadow 200ms ease;
 }
 
 button:hover {
-  background: #e4edf7;
+  background: rgba(255, 255, 255, 0.52);
 }
 
 button:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -79,8 +100,10 @@ textarea {
   width: 100%;
   min-height: 44px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
   color: var(--ink);
   padding: 10px 12px;
   outline: none;
@@ -90,8 +113,8 @@ input:focus,
 select:focus,
 textarea:focus,
 button:focus-visible {
-  border-color: rgba(31, 90, 166, 0.65);
-  box-shadow: 0 0 0 3px rgba(31, 90, 166, 0.14);
+  border-color: rgba(10, 132, 255, 0.6);
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.16);
 }
 
 textarea {
@@ -118,12 +141,12 @@ p {
   align-items: center;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(31, 90, 166, 0.2);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
   padding: clamp(22px, 4vw, 34px);
-  background:
-    linear-gradient(135deg, rgba(255,255,255,0.96), rgba(248,251,255,0.9)),
-    linear-gradient(120deg, rgba(31, 90, 166, 0.16), rgba(223, 71, 109, 0.1) 58%, rgba(15, 159, 154, 0.1));
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--shadow);
 }
 
@@ -131,15 +154,25 @@ p {
   content: "";
   position: absolute;
   inset: 0 auto 0 0;
-  width: 6px;
+  width: 5px;
   background: linear-gradient(180deg, var(--blue), var(--coral), var(--teal));
+  opacity: 0.9;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 42%);
 }
 
 .hero h1 {
   margin: 6px 0 10px;
   font-size: clamp(2rem, 5vw, 3.35rem);
   line-height: 1.03;
-  letter-spacing: 0;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 .hero p {
@@ -151,7 +184,7 @@ p {
 .journey {
   color: var(--blue);
   font-size: 0.78rem;
-  font-weight: 850;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -162,26 +195,30 @@ p {
   align-items: center;
   width: fit-content;
   min-height: 28px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0 11px;
   font-size: 0.76rem;
-  font-weight: 850;
+  font-weight: 700;
+  border: 1px solid transparent;
 }
 
 .save-pill {
   margin-top: 16px;
   background: var(--green-soft);
-  color: #146c39;
+  border-color: rgba(48, 209, 88, 0.32);
+  color: #0a6b2e;
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
 }
 
 button.save-pill {
-  border: 0;
   cursor: pointer;
 }
 
 .section-label {
   margin: 0 0 9px;
   background: var(--blue-soft);
+  border-color: rgba(10, 132, 255, 0.24);
   color: var(--blue);
 }
 
@@ -191,27 +228,29 @@ button.save-pill {
   display: grid;
   align-content: center;
   gap: 9px;
-  border: 1px solid rgba(31, 90, 166, 0.16);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 18px;
   text-align: center;
   background:
-    linear-gradient(90deg, rgba(23, 131, 69, 0.18) var(--pct, 0%), transparent 0),
-    linear-gradient(135deg, #ffffff, #f7fbff);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+    linear-gradient(90deg, rgba(48, 209, 88, 0.24) var(--pct, 0%), transparent 0),
+    var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow-inset);
 }
 
 .progress-orbit span {
   color: var(--ink);
   font-size: 2.45rem;
   line-height: 0.95;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .progress-orbit small {
   color: var(--muted);
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .hero-compact {
@@ -252,9 +291,11 @@ button.save-pill {
   margin: 18px 0 0;
   flex-wrap: wrap;
   padding: 5px;
-  border: 1px solid rgba(220, 228, 238, 0.86);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--glass-weak);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   width: fit-content;
 }
 
@@ -267,22 +308,36 @@ button.save-pill {
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
+  box-shadow: none;
 }
 
 .top-tabs button.active,
 .mobile-nav button.active {
-  border-color: rgba(31, 90, 166, 0.16);
-  background: #fff;
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.82);
   color: var(--blue);
   box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-sm);
 }
 
 .panel {
-  border: 1px solid rgba(220, 228, 238, 0.96);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--shadow-soft);
   padding: 18px;
+  position: relative;
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: var(--shadow-inset);
 }
 
 .view-grid {
@@ -300,30 +355,32 @@ button.save-pill {
   display: grid;
   align-content: center;
   min-height: 212px;
-  border-color: rgba(31, 90, 166, 0.18);
+  border-color: var(--line);
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.94), rgba(247,251,255,0.96)),
-    linear-gradient(90deg, rgba(31, 90, 166, 0.08), transparent 50%);
+    radial-gradient(120% 140% at 0% 0%, rgba(10, 132, 255, 0.16), transparent 60%),
+    var(--glass);
 }
 
 .primary {
   width: fit-content;
-  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: linear-gradient(135deg, var(--blue), #0040dd);
   color: #fff;
-  box-shadow: 0 10px 22px rgba(31, 90, 166, 0.2);
+  box-shadow: 0 14px 30px rgba(10, 132, 255, 0.35), var(--shadow-inset);
 }
 
 .primary:hover {
-  background: linear-gradient(135deg, #2865b8, var(--blue-dark));
+  background: linear-gradient(135deg, #1f93ff, var(--blue-dark));
 }
 
 .danger {
   background: var(--red-soft);
+  border-color: rgba(255, 59, 48, 0.28);
   color: var(--red);
 }
 
 .danger:hover {
-  background: #ffd9d7;
+  background: rgba(255, 59, 48, 0.2);
 }
 
 .stats {
@@ -336,8 +393,8 @@ button.save-pill {
   min-height: 98px;
   display: grid;
   align-content: center;
-  border-top: 4px solid rgba(31, 90, 166, 0.72);
-  background: linear-gradient(180deg, #fff, #f9fbfe);
+  border-top: 3px solid rgba(10, 132, 255, 0.65);
+  background: var(--glass-strong);
 }
 
 .stat:nth-child(2) {
@@ -357,6 +414,7 @@ button.save-pill {
 .stat strong {
   font-size: 2rem;
   line-height: 1;
+  font-weight: 700;
 }
 
 .progress-panel,
@@ -372,8 +430,8 @@ button.save-pill {
   width: 100%;
   height: 12px;
   overflow: hidden;
-  border-radius: 999px;
-  background: #e7edf5;
+  border-radius: var(--radius-pill);
+  background: rgba(120, 130, 160, 0.16);
 }
 
 .bar span {
@@ -410,6 +468,7 @@ button.save-pill {
 .progress-head strong {
   font-size: 2rem;
   line-height: 1;
+  font-weight: 700;
 }
 
 .cat-progress-list {
@@ -424,10 +483,10 @@ button.save-pill {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 8px;
   align-items: center;
-  border: 1px solid rgba(220, 228, 238, 0.8);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
-  background: rgba(255,255,255,0.58);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .cat-progress span {
@@ -435,7 +494,7 @@ button.save-pill {
   overflow: hidden;
   color: #344054;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -450,8 +509,10 @@ button.save-pill {
 }
 
 .alert {
-  border-color: rgba(180, 35, 53, 0.24);
-  background: linear-gradient(135deg, #fff, #fff8f7);
+  border-color: rgba(255, 59, 48, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 245, 244, 0.5)),
+    var(--glass);
 }
 
 .alert p {
@@ -460,7 +521,7 @@ button.save-pill {
 
 .all-good {
   color: var(--green);
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .suggestion {
@@ -468,7 +529,7 @@ button.save-pill {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--hairline);
   padding: 12px 0;
 }
 
@@ -479,17 +540,17 @@ button.save-pill {
   gap: 16px;
   position: relative;
   overflow: hidden;
-  border-color: rgba(109, 79, 215, 0.2);
+  border-color: rgba(191, 90, 242, 0.24);
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.94), rgba(255,255,255,0.76)),
-    linear-gradient(120deg, rgba(31, 90, 166, 0.18), rgba(223, 71, 109, 0.13) 50%, rgba(15, 159, 154, 0.16));
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4)),
+    linear-gradient(120deg, rgba(10, 132, 255, 0.16), rgba(255, 55, 95, 0.12) 50%, rgba(64, 200, 228, 0.14));
 }
 
-.ai-panel::before {
+.ai-panel::after {
   content: "";
   position: absolute;
   inset: 0 0 auto;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(90deg, var(--blue), var(--coral), var(--sun), var(--teal));
 }
 
@@ -501,13 +562,15 @@ button.save-pill {
 }
 
 .ai-label {
-  background: #fff1f5;
+  background: rgba(255, 55, 95, 0.14);
+  border-color: rgba(255, 55, 95, 0.28);
   color: var(--coral);
 }
 
 .ai-copy h2 {
   margin-bottom: 8px;
   font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 700;
 }
 
 .ai-copy p {
@@ -527,18 +590,20 @@ button.save-pill {
 
 .ai-prompts button {
   min-height: 36px;
-  background: rgba(255, 255, 255, 0.74);
+  background: rgba(255, 255, 255, 0.5);
   color: var(--blue);
-  box-shadow: inset 0 0 0 1px rgba(31, 90, 166, 0.1);
+  box-shadow: var(--shadow-inset);
 }
 
 .ai-ask {
   width: 100%;
   align-self: end;
   padding: 12px;
-  border: 1px solid rgba(31, 90, 166, 0.12);
-  border-radius: 8px;
-  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
 }
 
 .ai-chat {
@@ -547,17 +612,19 @@ button.save-pill {
 
 .ai-ask input {
   flex: 1 1 220px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .ai-answer {
   width: 100%;
-  border: 1px solid rgba(15, 159, 154, 0.18);
-  border-radius: 8px;
+  border: 1px solid rgba(64, 200, 228, 0.28);
+  border-radius: var(--radius);
   padding: 12px;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.82), rgba(248,253,252,0.9)),
-    rgba(255,255,255,0.7);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(240, 253, 252, 0.55)),
+    rgba(255, 255, 255, 0.4);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
 }
 
 .ai-answer span {
@@ -565,7 +632,7 @@ button.save-pill {
   margin-bottom: 5px;
   color: var(--teal);
   font-size: 0.75rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -588,25 +655,27 @@ button.save-pill {
   display: grid;
   align-content: center;
   gap: 4px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 12px;
-  background: rgba(255,255,255,0.72);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: var(--shadow-inset);
 }
 
 .ai-summary-grid b {
   font-size: 1.55rem;
+  font-weight: 700;
 }
 
 .ai-summary-grid small {
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .ai-link {
   grid-column: 1 / -1;
   width: fit-content;
-  background: #fff8e7;
+  background: rgba(255, 214, 10, 0.18);
+  border-color: rgba(255, 159, 10, 0.3);
   color: #7a4b00;
 }
 
@@ -617,19 +686,22 @@ button.save-pill {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .search-results {
   display: grid;
   gap: 10px;
-  border: 1px solid rgba(31, 90, 166, 0.14);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 10px;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(248,252,255,0.9)),
-    rgba(255,255,255,0.78);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(240, 248, 255, 0.45)),
+    rgba(255, 255, 255, 0.35);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
 }
 
 .search-results-head {
@@ -652,7 +724,7 @@ button.save-pill {
 .search-empty {
   color: var(--muted);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .search-result-list {
@@ -665,9 +737,9 @@ button.save-pill {
   display: grid;
   gap: 9px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px;
-  background: rgba(255,255,255,0.84);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .search-result-card > div:first-child {
@@ -699,7 +771,7 @@ button.save-pill {
 .search-result-card dt {
   color: var(--muted);
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -708,7 +780,7 @@ button.save-pill {
   align-items: center;
   gap: 5px;
   margin: 0;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .search-result-card p,
@@ -738,8 +810,8 @@ button.save-pill {
   align-items: stretch;
   padding: 7px;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(247,250,255,0.88)),
-    rgba(255,255,255,0.82);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(240, 248, 255, 0.42)),
+    rgba(255, 255, 255, 0.35);
 }
 
 .manage-action {
@@ -750,36 +822,38 @@ button.save-pill {
   justify-content: start;
   gap: 9px;
   overflow: hidden;
-  border: 1px solid rgba(31, 90, 166, 0.12);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   padding: 8px 10px;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(248,252,255,0.9)),
-    linear-gradient(120deg, rgba(31, 90, 166, 0.07), rgba(15, 159, 154, 0.05));
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(240, 248, 255, 0.4)),
+    linear-gradient(120deg, rgba(10, 132, 255, 0.08), rgba(64, 200, 228, 0.06));
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
   color: var(--ink);
   text-align: left;
   box-shadow: none;
 }
 
 .manage-action:hover {
-  border-color: rgba(31, 90, 166, 0.22);
+  border-color: rgba(10, 132, 255, 0.3);
   background:
-    linear-gradient(135deg, #fff, #f7fbff),
-    linear-gradient(120deg, rgba(31, 90, 166, 0.09), rgba(15, 159, 154, 0.06));
+    linear-gradient(135deg, rgba(255, 255, 255, 0.66), rgba(240, 248, 255, 0.5)),
+    linear-gradient(120deg, rgba(10, 132, 255, 0.1), rgba(64, 200, 228, 0.07));
 }
 
 .manage-action.primary-action {
-  border-color: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.1), transparent),
-    linear-gradient(135deg, var(--blue), #17467f);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent),
+    linear-gradient(135deg, var(--blue), #0040dd);
   color: #fff;
 }
 
 .manage-action.primary-action:hover {
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.16), transparent),
-    linear-gradient(135deg, #2867b5, var(--blue-dark));
+    linear-gradient(135deg, rgba(255, 255, 255, 0.24), transparent),
+    linear-gradient(135deg, #1f93ff, var(--blue-dark));
 }
 
 .manage-icon {
@@ -788,25 +862,25 @@ button.save-pill {
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
-  border-radius: 8px;
-  background: rgba(31, 90, 166, 0.09);
+  border-radius: var(--radius-xs);
+  background: rgba(10, 132, 255, 0.12);
   color: var(--blue);
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .primary-action .manage-icon {
-  background: rgba(255,255,255,0.18);
+  background: rgba(255, 255, 255, 0.22);
   color: #fff;
 }
 
 .manage-action:nth-child(2) .manage-icon {
-  background: rgba(109, 79, 215, 0.1);
+  background: rgba(191, 90, 242, 0.14);
   color: var(--violet);
 }
 
 .manage-action:nth-child(3) .manage-icon {
-  background: rgba(184, 107, 0, 0.1);
+  background: rgba(255, 159, 10, 0.14);
   color: var(--amber);
 }
 
@@ -819,13 +893,13 @@ button.save-pill {
 .manage-action small {
   color: var(--muted);
   font-size: 0.66rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .manage-action.primary-action small {
-  color: rgba(255,255,255,0.82);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .manage-action strong {
@@ -844,15 +918,15 @@ button.save-pill {
   gap: 12px;
   padding: 8px 10px;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(248,252,255,0.9)),
-    rgba(255,255,255,0.78);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(240, 248, 255, 0.4)),
+    rgba(255, 255, 255, 0.32);
 }
 
 .mode-strip.active {
-  border-color: rgba(31, 90, 166, 0.24);
+  border-color: rgba(10, 132, 255, 0.3);
   background:
-    linear-gradient(135deg, rgba(233,242,255,0.94), rgba(255,255,255,0.94)),
-    rgba(255,255,255,0.86);
+    linear-gradient(135deg, rgba(224, 238, 255, 0.7), rgba(255, 255, 255, 0.6)),
+    rgba(255, 255, 255, 0.4);
 }
 
 .mode-strip span {
@@ -868,7 +942,7 @@ button.save-pill {
 .mode-strip small {
   color: var(--muted);
   font-size: 0.72rem;
-  font-weight: 850;
+  font-weight: 650;
 }
 
 .mode-strip button {
@@ -913,11 +987,11 @@ button.save-pill {
   justify-content: space-between;
   gap: 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px 10px;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.96), rgba(248,251,255,0.92)),
-    #fff;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(240, 248, 255, 0.45)),
+    rgba(255, 255, 255, 0.4);
 }
 
 .priority-name {
@@ -926,7 +1000,7 @@ button.save-pill {
   gap: 6px;
   min-width: 0;
   color: var(--ink);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .priority-row-actions {
@@ -938,9 +1012,9 @@ button.save-pill {
 .priority-row-actions button,
 .chip-edit button {
   min-height: 30px;
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
   padding: 0 10px;
-  background: #f2f7fd;
+  background: rgba(10, 132, 255, 0.1);
   color: var(--blue);
   font-size: 0.76rem;
 }
@@ -976,15 +1050,16 @@ button.save-pill {
   width: 34px;
   min-height: 34px;
   padding: 0;
-  border: 1px solid rgba(31, 90, 166, 0.1);
-  background: #f2f7fd;
+  border: 1px solid var(--line);
+  background: rgba(10, 132, 255, 0.1);
   color: var(--blue);
   font-size: 0.95rem;
   line-height: 1;
+  border-radius: var(--radius-xs);
 }
 
 .danger-icon {
-  border-color: rgba(180, 35, 53, 0.1);
+  border-color: rgba(255, 59, 48, 0.18);
   background: var(--red-soft);
   color: var(--red);
 }
@@ -1015,10 +1090,10 @@ button.save-pill {
   gap: 8px;
   align-items: center;
   padding: 12px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--hairline);
   background:
-    linear-gradient(90deg, rgba(31, 90, 166, 0.1), rgba(23, 131, 69, 0.05)),
-    #fbfdff;
+    linear-gradient(90deg, rgba(10, 132, 255, 0.1), rgba(48, 209, 88, 0.05)),
+    rgba(255, 255, 255, 0.24);
 }
 
 .category.editing-mode .category-head {
@@ -1035,14 +1110,15 @@ button.save-pill {
   width: 38px;
   min-height: 38px;
   padding: 0;
+  border-radius: var(--radius-xs);
 }
 
 .note {
   margin: 14px;
   border-left: 4px solid var(--amber);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 12px;
-  background: #fff8ec;
+  background: rgba(255, 159, 10, 0.14);
   color: #5f4300;
 }
 
@@ -1074,10 +1150,12 @@ button.save-pill {
   gap: 12px;
   align-items: center;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 12px;
-  background: linear-gradient(180deg, #fff, #fbfdff);
-  transition: border 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
+  transition: border 200ms ease, box-shadow 200ms ease, transform 150ms ease, background 200ms ease;
 }
 
 .item-row.manage-open {
@@ -1085,8 +1163,9 @@ button.save-pill {
 }
 
 .item-row:hover {
-  border-color: rgba(31, 90, 166, 0.28);
-  box-shadow: 0 8px 20px rgba(18, 33, 61, 0.07);
+  border-color: rgba(10, 132, 255, 0.32);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: var(--shadow-soft);
 }
 
 .check {
@@ -1095,13 +1174,13 @@ button.save-pill {
   border: 2px solid var(--blue);
   border-radius: 50%;
   padding: 0;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.7);
   color: var(--green);
   font-size: 1.5rem;
 }
 
 .item-row.packed {
-  background: linear-gradient(135deg, #fff, #f7fbf8);
+  background: rgba(240, 250, 244, 0.5);
 }
 
 .item-row.packed .check {
@@ -1168,32 +1247,34 @@ button.save-pill {
   min-height: 86px;
   align-content: center;
   border: 1px solid var(--line);
-  background:
-    linear-gradient(135deg, #fff, #f8fbff);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
   color: var(--ink);
   text-align: left;
   padding: 11px;
 }
 
 .bag-card.active {
-  border-color: transparent;
+  border-color: rgba(255, 255, 255, 0.32);
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.12), transparent),
-    linear-gradient(135deg, var(--blue), #143a73);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent),
+    linear-gradient(135deg, var(--blue), #0b2d70);
   color: #fff;
-  box-shadow: 0 14px 30px rgba(31, 90, 166, 0.24);
+  box-shadow: 0 14px 30px rgba(10, 132, 255, 0.32);
 }
 
 .bag-card span,
 .bag-card small {
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 650;
   line-height: 1.1;
 }
 
 .bag-card.active span,
 .bag-card.active small {
-  color: rgba(255, 255, 255, 0.84);
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .bag-meter {
@@ -1201,8 +1282,8 @@ button.save-pill {
   width: 100%;
   height: 6px;
   overflow: hidden;
-  border-radius: 999px;
-  background: #e5edf7;
+  border-radius: var(--radius-pill);
+  background: rgba(120, 130, 160, 0.18);
 }
 
 .bag-meter em {
@@ -1213,7 +1294,7 @@ button.save-pill {
 }
 
 .bag-card.active .bag-meter {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .bag-card.active .bag-meter em {
@@ -1230,7 +1311,7 @@ button.save-pill {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--hairline);
   padding-bottom: 10px;
 }
 
@@ -1240,14 +1321,14 @@ button.save-pill {
 
 .bag-detail-head p {
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .weight-badge {
   flex: 0 0 auto;
-  border-radius: 999px;
-  background: #e9f7ef;
-  color: #12633d;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft);
+  color: #0a6b2e;
   padding: 7px 10px;
   font-size: 0.82rem;
 }
@@ -1269,7 +1350,7 @@ button.save-pill {
   gap: 5px;
   color: var(--muted);
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .bag-weight-compact input {
@@ -1291,14 +1372,14 @@ button.save-pill {
   display: grid;
   gap: 5px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.86);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.42);
   padding: 9px 10px;
 }
 
 .bag-item-card.packed {
-  border-color: rgba(18, 132, 84, 0.24);
-  background: #f3fbf6;
+  border-color: rgba(48, 209, 88, 0.28);
+  background: rgba(236, 250, 240, 0.55);
 }
 
 .bag-item-title {
@@ -1310,12 +1391,12 @@ button.save-pill {
 
 .bag-item-title span {
   flex: 0 0 auto;
-  border-radius: 999px;
-  background: #eef4fb;
+  border-radius: var(--radius-pill);
+  background: rgba(120, 130, 160, 0.16);
   color: var(--muted);
   padding: 3px 7px;
   font-size: 0.66rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -1344,10 +1425,10 @@ button.save-pill {
 .immigration-practice {
   display: grid;
   gap: 10px;
-  border-color: rgba(31, 90, 166, 0.22);
+  border-color: rgba(10, 132, 255, 0.26);
   background:
-    linear-gradient(135deg, rgba(31, 90, 166, 0.08), rgba(15, 159, 154, 0.08)),
-    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(249,252,255,0.94));
+    linear-gradient(135deg, rgba(10, 132, 255, 0.1), rgba(64, 200, 228, 0.08)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.4));
 }
 
 .practice-head {
@@ -1360,6 +1441,7 @@ button.save-pill {
 .practice-head h2 {
   margin-bottom: 3px;
   font-size: 1.28rem;
+  font-weight: 700;
 }
 
 .practice-head p {
@@ -1370,8 +1452,8 @@ button.save-pill {
 
 .practice-head strong {
   flex: 0 0 auto;
-  border-radius: 999px;
-  background: #ecfdf5;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft);
   color: var(--green);
   padding: 7px 10px;
   font-size: 0.78rem;
@@ -1380,8 +1462,8 @@ button.save-pill {
 .practice-progress {
   height: 8px;
   overflow: hidden;
-  border-radius: 999px;
-  background: #e5edf7;
+  border-radius: var(--radius-pill);
+  background: rgba(120, 130, 160, 0.18);
 }
 
 .practice-progress span {
@@ -1394,15 +1476,15 @@ button.save-pill {
 .practice-question {
   display: grid;
   gap: 5px;
-  border: 1px solid rgba(31, 90, 166, 0.16);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   padding: 12px;
-  background: rgba(255,255,255,0.84);
+  background: rgba(255, 255, 255, 0.48);
 }
 
 .practice-question.confident {
-  border-color: rgba(23, 131, 69, 0.24);
-  background: rgba(233, 248, 239, 0.72);
+  border-color: rgba(48, 209, 88, 0.3);
+  background: rgba(233, 248, 239, 0.5);
 }
 
 .practice-question small,
@@ -1410,7 +1492,7 @@ button.save-pill {
 .practice-guide small {
   color: var(--muted);
   font-size: 0.7rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1419,15 +1501,16 @@ button.save-pill {
   margin: 0;
   font-size: 1.2rem;
   line-height: 1.18;
+  font-weight: 700;
 }
 
 .practice-guide {
   display: grid;
   gap: 5px;
   border-left: 4px solid var(--teal);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
-  background: rgba(255,255,255,0.86);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .practice-guide p {
@@ -1460,7 +1543,7 @@ button.save-pill {
   grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   align-items: center;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--hairline);
   padding: 10px 0;
 }
 
@@ -1513,10 +1596,10 @@ button.save-pill {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 0.86fr);
   gap: 18px;
-  border-color: rgba(31, 90, 166, 0.24);
+  border-color: rgba(10, 132, 255, 0.26);
   background:
-    linear-gradient(135deg, rgba(31, 90, 166, 0.08), rgba(23, 131, 69, 0.06)),
-    #fff;
+    linear-gradient(135deg, rgba(10, 132, 255, 0.1), rgba(48, 209, 88, 0.07)),
+    rgba(255, 255, 255, 0.4);
 }
 
 .cloud-config,
@@ -1527,16 +1610,18 @@ button.save-pill {
 
 .cloud-details {
   align-self: start;
-  border: 1px solid rgba(31, 90, 166, 0.16);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   padding: 12px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
 }
 
 .cloud-details summary {
   color: var(--blue);
   cursor: pointer;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .cloud-details .cloud-config {
@@ -1554,12 +1639,12 @@ button.save-pill {
 }
 
 .cloud-status {
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
-  background: rgba(255,255,255,0.75);
+  background: rgba(255, 255, 255, 0.45);
   color: var(--muted);
   font-size: 0.9rem;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .sheet-backdrop {
@@ -1569,7 +1654,9 @@ button.save-pill {
   display: grid;
   place-items: end center;
   padding: 18px;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .confirm-backdrop {
@@ -1579,31 +1666,35 @@ button.save-pill {
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(15, 23, 42, 0.42);
-  backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .confirm-card {
   width: min(430px, 100%);
-  border: 1px solid rgba(31, 90, 166, 0.18);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 18px;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,251,255,0.94)),
-    linear-gradient(120deg, rgba(31, 90, 166, 0.12), rgba(15, 159, 154, 0.1));
-  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.24);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.6)),
+    linear-gradient(120deg, rgba(10, 132, 255, 0.1), rgba(64, 200, 228, 0.08));
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.28);
 }
 
 .confirm-card.danger-confirm {
-  border-color: rgba(180, 35, 53, 0.2);
+  border-color: rgba(255, 59, 48, 0.24);
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,248,248,0.94)),
-    linear-gradient(120deg, rgba(180, 35, 53, 0.12), rgba(244, 183, 64, 0.1));
+    linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 250, 249, 0.6)),
+    linear-gradient(120deg, rgba(255, 59, 48, 0.1), rgba(255, 159, 10, 0.08));
 }
 
 .confirm-card h2 {
   margin: 4px 0 8px;
   font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .confirm-card p {
@@ -1625,13 +1716,15 @@ button.save-pill {
   z-index: 40;
   width: min(360px, calc(100% - 32px));
   transform: translateX(-50%);
-  border: 1px solid rgba(31, 90, 166, 0.16);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 11px 14px;
-  background: rgba(255,255,255,0.96);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   color: var(--ink);
-  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.16);
-  font-weight: 800;
+  box-shadow: var(--shadow);
+  font-weight: 650;
   text-align: center;
 }
 
@@ -1641,9 +1734,12 @@ button.save-pill {
   display: grid;
   gap: 12px;
   overflow: auto;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
   padding: 18px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--shadow);
 }
 
@@ -1655,12 +1751,13 @@ button.save-pill {
 
 .sheet-head h2 {
   margin: 0;
+  font-weight: 700;
 }
 
 .sheet label {
   display: grid;
   gap: 6px;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .compact-sheet {
@@ -1692,10 +1789,11 @@ button.save-pill {
 
 @media (max-width: 820px) {
   body {
-    background:
-      radial-gradient(circle at 12% 0, rgba(31, 90, 166, 0.13), transparent 18rem),
-      radial-gradient(circle at 100% 10rem, rgba(223, 71, 109, 0.09), transparent 16rem),
-      linear-gradient(180deg, #fbfdff 0, #f4f7fb 18rem);
+    background-image:
+      radial-gradient(22rem 20rem at 10% -6%, rgba(10, 132, 255, 0.26), transparent 60%),
+      radial-gradient(20rem 18rem at 100% 8rem, rgba(255, 55, 95, 0.2), transparent 60%),
+      radial-gradient(18rem 18rem at 20% 100%, rgba(64, 200, 228, 0.22), transparent 60%),
+      linear-gradient(180deg, #f5f7fc 0, #f2f4fa 18rem);
   }
 
   .app-shell {
@@ -2020,7 +2118,7 @@ button.save-pill {
   .manage-icon {
     width: 26px;
     height: 26px;
-    border-radius: 7px;
+    border-radius: var(--radius-xs);
     font-size: 0.86rem;
   }
 
@@ -2105,7 +2203,7 @@ button.save-pill {
   }
 
   .category {
-    box-shadow: 0 4px 12px rgba(18, 33, 61, 0.05);
+    box-shadow: 0 4px 14px rgba(30, 41, 74, 0.08);
   }
 
   .category-head h2 {
@@ -2334,12 +2432,13 @@ button.save-pill {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 4px;
-    border: 1px solid rgba(220, 228, 238, 0.9);
-    border-radius: 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
     padding: 6px;
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
-    backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.68);
+    box-shadow: var(--shadow);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
   }
 
   .mobile-nav button {
@@ -2347,7 +2446,7 @@ button.save-pill {
     display: grid;
     place-items: center;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 4px 2px;
     background: transparent;
     color: var(--muted);
@@ -2360,18 +2459,18 @@ button.save-pill {
     height: 22px;
     display: grid;
     place-items: center;
-    border-radius: 999px;
-    background: #eef2f7;
+    border-radius: var(--radius-pill);
+    background: rgba(120, 130, 160, 0.16);
     color: var(--muted);
     font-size: 0.7rem;
-    font-weight: 900;
+    font-weight: 700;
     line-height: 1;
   }
 
   .mobile-nav button.active {
-    background: linear-gradient(180deg, #f5f9ff, var(--blue-soft));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), var(--blue-soft));
     color: var(--blue);
-    box-shadow: inset 0 0 0 1px rgba(31, 90, 166, 0.08);
+    box-shadow: var(--shadow-inset);
   }
 
   .mobile-nav button.active span {
@@ -2413,6 +2512,8 @@ button.save-pill {
     border: 1px solid #ddd;
     box-shadow: none;
     break-inside: avoid;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .hero {
